@@ -25,14 +25,22 @@ interface Slide {
     hashtags?: string[];
     gptPrompt?: string;
     geminiPrompt?: string;
+    // 쇼츠 전용
+    duration?: string;
+    action?: string;
+    camera?: string;
 }
 
 interface PlannerResult {
     title: string;
     styleGuide?: string;
+    template?: string;
     slides: Slide[];
     prdDocument: string;
     copywritingPrompt: string;
+    // 쇼츠 전용
+    subjectDesignSheet?: string;
+    fullVideoPrompt?: string;
 }
 
 type ImageModel = "gpt" | "gemini";
@@ -204,6 +212,13 @@ const CONTENT_TYPES = [
 ];
 
 const SLIDE_TYPE_LABEL: Record<string, string> = {
+    // 쇼츠 장면
+    scene_hook: "훅 장면", scene_problem: "문제 장면", scene_solution: "해결 장면",
+    scene_demo: "시연 장면", scene_cta: "CTA 장면",
+    // 상세페이지 섹션
+    dp_hero: "히어로", dp_pain: "고객 고충", dp_solution: "해결책",
+    dp_feature1: "특징 1", dp_feature2: "특징 2", dp_review: "후기/증명", dp_cta: "구매 유도",
+    // 카드뉴스 (기존)
     cover: "표지", problem: "공감", solution: "해결책",
     feature1: "포인트 1", feature2: "포인트 2", feature3: "포인트 3",
     review: "후기", comparison: "비교", howto: "사용법", cta: "행동 유도",
@@ -213,6 +228,13 @@ const SLIDE_TYPE_LABEL: Record<string, string> = {
 };
 
 const SLIDE_TYPE_COLOR: Record<string, string> = {
+    // 쇼츠 장면
+    scene_hook: "#8B5CF6", scene_problem: "#F59E0B", scene_solution: "#06D6A0",
+    scene_demo: "#4361EE", scene_cta: "#FF6B35",
+    // 상세페이지 섹션
+    dp_hero: "#FF6B35", dp_pain: "#F59E0B", dp_solution: "#06D6A0",
+    dp_feature1: "#4361EE", dp_feature2: "#8B5CF6", dp_review: "#0EA5E9", dp_cta: "#FF6B35",
+    // 카드뉴스 (기존)
     cover: "#FF6B35", problem: "#F59E0B", solution: "#06D6A0",
     feature1: "#4361EE", feature2: "#4361EE", feature3: "#4361EE",
     review: "#8B5CF6", comparison: "#EC4899", howto: "#0EA5E9", cta: "#FF6B35",
@@ -1161,11 +1183,47 @@ export default function PlannerPage() {
                             ))}
                         </div>
 
+                        {/* 쇼츠: 디자인 시트 패널 */}
+                        {(result.template ?? form.template) === "shorts" && result.subjectDesignSheet && (
+                            <div className="edu-card overflow-hidden">
+                                <div className="flex items-center justify-between px-4 py-3 border-b"
+                                    style={{ borderColor: "var(--border)", background: "#F5F3FF" }}>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-base">🎨</span>
+                                        <p className="text-sm font-black" style={{ color: "#7C3AED" }}>주인공/제품 디자인 시트 프롬프트</p>
+                                    </div>
+                                    <button
+                                        onClick={() => copyText(result.subjectDesignSheet!, "designSheet")}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
+                                        style={{
+                                            background: copiedKey === "designSheet" ? "#7C3AED" : "white",
+                                            color: copiedKey === "designSheet" ? "white" : "#7C3AED",
+                                            border: "1px solid #7C3AED40",
+                                        }}>
+                                        {copiedKey === "designSheet" ? <Check size={11} /> : <Copy size={11} />}
+                                        복사
+                                    </button>
+                                </div>
+                                <div className="p-4">
+                                    <p className="text-xs mb-2" style={{ color: "var(--foreground-soft)" }}>
+                                        💡 이 프롬프트로 GPT Image 2.0에서 레퍼런스 이미지를 먼저 생성하세요. 생성된 이미지를 각 장면 프롬프트 사용 시 업로드하면 일관성이 유지됩니다.
+                                    </p>
+                                    <p className="text-xs leading-relaxed px-3 py-2.5 rounded-xl"
+                                        style={{ background: "#F5F3FF", color: "var(--foreground-soft)", border: "1px solid #DDD6FE" }}>
+                                        {result.subjectDesignSheet.length > 200
+                                            ? result.subjectDesignSheet.slice(0, 200) + "..."
+                                            : result.subjectDesignSheet}
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
                         {/* 스토리보드 그리드 */}
                         <div className="grid grid-cols-2 gap-3">
                             {result.slides.map((slide, idx) => {
                                 const color = SLIDE_TYPE_COLOR[slide.type] || "var(--primary)";
                                 const isSelected = selectedSlide === idx;
+                                const isShorts = slide.type.startsWith("scene_");
                                 return (
                                     <button
                                         key={slide.slideNum}
@@ -1175,29 +1233,42 @@ export default function PlannerPage() {
                                             borderColor: isSelected ? color : "var(--border)",
                                             background: isSelected ? color + "08" : "white",
                                         }}>
-                                        {/* 컷 헤더 */}
-                                        <div className="flex items-center gap-2 px-3 py-2.5"
+                                        {/* 헤더 */}
+                                        <div className="flex items-center justify-between px-3 py-2.5"
                                             style={{ background: color + "15" }}>
-                                            <span className="w-6 h-6 rounded-md flex items-center justify-center text-xs font-black text-white"
-                                                style={{ background: color }}>
-                                                {slide.slideNum}
-                                            </span>
-                                            <span className="text-xs font-black" style={{ color }}>
-                                                {SLIDE_TYPE_LABEL[slide.type] ?? slide.type}
-                                            </span>
+                                            <div className="flex items-center gap-2">
+                                                <span className="w-6 h-6 rounded-md flex items-center justify-center text-xs font-black text-white"
+                                                    style={{ background: color }}>
+                                                    {slide.slideNum}
+                                                </span>
+                                                <span className="text-xs font-black" style={{ color }}>
+                                                    {SLIDE_TYPE_LABEL[slide.type] ?? slide.type}
+                                                </span>
+                                            </div>
+                                            {isShorts && slide.duration && (
+                                                <span className="text-xs font-bold px-2 py-0.5 rounded-full"
+                                                    style={{ background: color + "25", color }}>
+                                                    {slide.duration}
+                                                </span>
+                                            )}
                                         </div>
 
-                                        {/* 컷 내용 */}
+                                        {/* 내용 */}
                                         <div className="px-3 py-3 space-y-2">
                                             <p className="text-sm font-black leading-snug" style={{ color: "var(--foreground)" }}>
                                                 {slide.headline}
                                             </p>
-                                            {slide.subtext && (
-                                                <p className="text-xs font-semibold" style={{ color: color }}>{slide.subtext}</p>
+                                            {!isShorts && slide.subtext && (
+                                                <p className="text-xs font-semibold" style={{ color }}>{slide.subtext}</p>
                                             )}
                                             <p className="text-xs leading-relaxed" style={{ color: "var(--foreground-soft)" }}>
                                                 {slide.body.length > 60 ? slide.body.slice(0, 60) + "..." : slide.body}
                                             </p>
+                                            {isShorts && slide.camera && (
+                                                <p className="text-xs font-semibold" style={{ color: "var(--foreground-muted)" }}>
+                                                    📷 {slide.camera}
+                                                </p>
+                                            )}
                                         </div>
 
                                         {/* 이미지 설명 */}
@@ -1220,6 +1291,7 @@ export default function PlannerPage() {
                                 key={selectedSlide}
                                 slide={result.slides[selectedSlide]}
                                 selectedModel={selectedModel}
+                                template={result.template ?? form.template}
                                 editContext={{
                                     productName: form.productName,
                                     tone: form.tone,
@@ -1376,12 +1448,82 @@ export default function PlannerPage() {
                         {/* 프롬프트 탭 */}
                         {activeTab === "prompts" && (
                             <div className="space-y-4">
+                                {/* 쇼츠: 디자인 시트 + 전체 영상 프롬프트 */}
+                                {(result.template ?? form.template) === "shorts" && (
+                                    <>
+                                        {result.subjectDesignSheet && (
+                                            <div className="edu-card overflow-hidden">
+                                                <div className="flex items-center justify-between px-4 py-3 border-b"
+                                                    style={{ borderColor: "var(--border)", background: "#F5F3FF" }}>
+                                                    <div>
+                                                        <p className="text-sm font-black" style={{ color: "#7C3AED" }}>
+                                                            🎨 디자인 시트 프롬프트 (Step 1 — 먼저 생성)
+                                                        </p>
+                                                        <p className="text-xs mt-0.5" style={{ color: "#7C3AED99" }}>
+                                                            GPT Image 2.0 → 생성 이미지를 아래 장면 프롬프트 사용 시 업로드
+                                                        </p>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => copyText(result.subjectDesignSheet!, "step1Sheet")}
+                                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0"
+                                                        style={{
+                                                            background: copiedKey === "step1Sheet" ? "#7C3AED" : "white",
+                                                            color: copiedKey === "step1Sheet" ? "white" : "#7C3AED",
+                                                            border: "1px solid #7C3AED40",
+                                                        }}>
+                                                        {copiedKey === "step1Sheet" ? <Check size={11} /> : <Copy size={11} />}
+                                                        복사
+                                                    </button>
+                                                </div>
+                                                <div className="p-4">
+                                                    <pre className="text-xs leading-relaxed whitespace-pre-wrap"
+                                                        style={{ color: "var(--foreground-soft)" }}>
+                                                        {result.subjectDesignSheet}
+                                                    </pre>
+                                                </div>
+                                            </div>
+                                        )}
+                                        {result.fullVideoPrompt && (
+                                            <div className="edu-card overflow-hidden">
+                                                <div className="flex items-center justify-between px-4 py-3 border-b"
+                                                    style={{ borderColor: "var(--border)", background: "#ECFDF5" }}>
+                                                    <div>
+                                                        <p className="text-sm font-black" style={{ color: "#065F46" }}>
+                                                            🎬 전체 영상 프롬프트 (Sora / Kling / Runway)
+                                                        </p>
+                                                        <p className="text-xs mt-0.5" style={{ color: "#065F4699" }}>
+                                                            디자인 시트 이미지와 함께 영상 생성 AI에 사용
+                                                        </p>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => copyText(result.fullVideoPrompt!, "fullVideo")}
+                                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0"
+                                                        style={{
+                                                            background: copiedKey === "fullVideo" ? "#065F46" : "white",
+                                                            color: copiedKey === "fullVideo" ? "white" : "#065F46",
+                                                            border: "1px solid #6EE7B7",
+                                                        }}>
+                                                        {copiedKey === "fullVideo" ? <Check size={11} /> : <Copy size={11} />}
+                                                        복사
+                                                    </button>
+                                                </div>
+                                                <div className="p-4">
+                                                    <pre className="text-xs leading-relaxed whitespace-pre-wrap"
+                                                        style={{ color: "var(--foreground-soft)" }}>
+                                                        {result.fullVideoPrompt}
+                                                    </pre>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </>
+                                )}
+
                                 {/* AI 이미지 프롬프트 */}
                                 <div className="edu-card overflow-hidden">
                                     <div className="flex items-center justify-between px-4 py-3 border-b"
                                         style={{ borderColor: "var(--border)", background: "var(--surface-2)" }}>
                                         <p className="text-sm font-black" style={{ color: "var(--foreground)" }}>
-                                            🖼️ AI 이미지 프롬프트 (컷별)
+                                            🖼️ AI 이미지 프롬프트 ({(result.template ?? form.template) === "shorts" ? "장면별" : "컷별"})
                                         </p>
                                         <div className="flex items-center gap-2">
                                             {(["gpt", "gemini"] as ImageModel[]).map(m => (
@@ -1603,11 +1745,13 @@ function SlideDetail({
     selectedModel,
     editContext,
     onUpdate,
+    template = "",
 }: {
     slide: Slide;
     selectedModel: ImageModel;
     editContext: { productName: string; tone: string; imageStyle: string };
     onUpdate: (updates: Partial<Slide>) => void;
+    template?: string;
 }) {
     const [copied, setCopied] = useState(false);
     const [editMode, setEditMode] = useState<"none" | "direct" | "ai">("none");
@@ -1616,6 +1760,7 @@ function SlideDetail({
     const [aiLoading, setAiLoading] = useState(false);
     const [aiError, setAiError] = useState("");
 
+    const isShorts = template === "shorts";
     const prompt = selectedModel === "gpt" ? slide.gptPrompt : slide.geminiPrompt;
     const color = SLIDE_TYPE_COLOR[slide.type] || "var(--primary)";
     const linkUrl = selectedModel === "gpt" ? "https://chat.openai.com" : "https://gemini.google.com";
@@ -1704,13 +1849,43 @@ function SlideDetail({
                 {/* ── 보기 모드 ── */}
                 {editMode === "none" && (
                     <>
+                        {/* 쇼츠 전용: 타임코드 + 카메라 배지 */}
+                        {isShorts && (slide.duration || slide.camera) && (
+                            <div className="flex flex-wrap gap-2">
+                                {slide.duration && (
+                                    <span className="text-xs font-black px-3 py-1.5 rounded-full"
+                                        style={{ background: color + "20", color }}>
+                                        ⏱ {slide.duration}
+                                    </span>
+                                )}
+                                {slide.camera && (
+                                    <span className="text-xs font-semibold px-3 py-1.5 rounded-full"
+                                        style={{ background: "var(--secondary-light)", color: "var(--secondary)" }}>
+                                        📷 {slide.camera}
+                                    </span>
+                                )}
+                            </div>
+                        )}
                         <div>
-                            <p className="text-xs font-bold uppercase mb-1" style={{ color: "var(--foreground-soft)" }}>헤드라인</p>
+                            <p className="text-xs font-bold uppercase mb-1" style={{ color: "var(--foreground-soft)" }}>
+                                {isShorts ? "장면 제목" : "헤드라인"}
+                            </p>
                             <p className="text-lg font-black" style={{ color: "var(--foreground)" }}>{slide.headline}</p>
-                            {slide.subtext && <p className="text-base mt-1" style={{ color }}>{slide.subtext}</p>}
+                            {!isShorts && slide.subtext && <p className="text-base mt-1" style={{ color }}>{slide.subtext}</p>}
                         </div>
+                        {isShorts && slide.action && (
+                            <div>
+                                <p className="text-xs font-bold uppercase mb-1" style={{ color: "var(--foreground-soft)" }}>화면 동작</p>
+                                <p className="text-sm leading-relaxed px-4 py-3 rounded-xl"
+                                    style={{ background: color + "10", border: `1px solid ${color}30`, color: "var(--foreground-soft)" }}>
+                                    {slide.action}
+                                </p>
+                            </div>
+                        )}
                         <div>
-                            <p className="text-xs font-bold uppercase mb-1" style={{ color: "var(--foreground-soft)" }}>본문</p>
+                            <p className="text-xs font-bold uppercase mb-1" style={{ color: "var(--foreground-soft)" }}>
+                                {isShorts ? "대사 / 나레이션 자막" : "본문"}
+                            </p>
                             <p className="text-sm leading-relaxed" style={{ color: "var(--foreground-soft)" }}>{slide.body}</p>
                         </div>
                         {slide.imageDesc && (
