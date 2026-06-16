@@ -17,8 +17,17 @@ interface Section {
     reviews?: ReviewItem[]; urgency?: string; button?: string; note?: string;
     gptPrompt?: string;
 }
+interface ProductStyleSheet {
+    mainProduct?: string;
+    environment?: string;
+    visualStyle?: string;
+    colorPalette?: string;
+    productSheetPrompt: string;
+}
+
 interface DetailPageResult {
     hookHeadline: string; subHeadline: string;
+    productStyleSheet?: ProductStyleSheet;
     sections: Section[]; seoKeywords: string[];
 }
 
@@ -119,6 +128,7 @@ export default function DetailPageBuilderPage() {
     const [showFormPanel, setShowFormPanel] = useState(false);
     const [copiedContent, setCopiedContent] = useState<string | null>(null);
     const [copiedPrompt, setCopiedPrompt] = useState<string | null>(null);
+    const [copiedProductSheet, setCopiedProductSheet] = useState(false);
     const [justSaved, setJustSaved] = useState(false);
     const [savedId, setSavedId] = useState<string | null>(null);
     const [linkedBanner, setLinkedBanner] = useState(false);
@@ -133,9 +143,10 @@ export default function DetailPageBuilderPage() {
         try {
             const parsed = JSON.parse(saved);
             if (parsed.hookHeadline) {
-                const { _savedId, ...content } = parsed;
+                const { _savedId, _input, ...content } = parsed;
                 setResult(content as DetailPageResult);
                 setSavedId(_savedId ?? null);
+                if (_input) setForm(f => ({ ...f, ..._input }));
             }
         } catch { /* 무시 */ }
         localStorage.removeItem("ai_gallery_restore_detailpage");
@@ -208,6 +219,12 @@ export default function DetailPageBuilderPage() {
         setCopiedContent(key);
         setTimeout(() => setCopiedContent(null), 2000);
     };
+    const copyProductSheet = async (text: string) => {
+        await navigator.clipboard.writeText(text);
+        setCopiedProductSheet(true);
+        setTimeout(() => setCopiedProductSheet(false), 2000);
+    };
+
     const copyGptPrompt = async (text: string, key: string) => {
         await navigator.clipboard.writeText(text);
         setCopiedPrompt(key);
@@ -262,6 +279,45 @@ export default function DetailPageBuilderPage() {
                         {copiedContent === "headline" ? <Check size={11} /> : <Copy size={11} />} 헤드라인 복사
                     </button>
                 </div>
+
+                {/* 제품 비주얼 스타일 시트 */}
+                {result.productStyleSheet?.productSheetPrompt && (
+                    <div className="edu-card overflow-hidden mb-4">
+                        <div className="flex items-center justify-between px-4 py-2.5"
+                            style={{ background: "#ECFDF5", borderBottom: "1px solid #10A37F20" }}>
+                            <div>
+                                <p className="text-xs font-black" style={{ color: "#10A37F" }}>🎨 제품 비주얼 레퍼런스 시트 — GPT Image 2.0 전용</p>
+                                <p className="text-[10px]" style={{ color: "#10A37F88" }}>이 프롬프트로 먼저 제품 레퍼런스 시트를 생성한 뒤 각 섹션 이미지에 첨부하세요</p>
+                            </div>
+                            <button onClick={() => copyProductSheet(result.productStyleSheet!.productSheetPrompt)}
+                                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-bold shrink-0"
+                                style={{ background: copiedProductSheet ? "#10A37F" : "white", color: copiedProductSheet ? "white" : "#10A37F" }}>
+                                {copiedProductSheet ? <Check size={10} /> : <Copy size={10} />}
+                                {copiedProductSheet ? "복사됨!" : "프롬프트 복사"}
+                            </button>
+                        </div>
+                        {(result.productStyleSheet.mainProduct || result.productStyleSheet.visualStyle) && (
+                            <div className="grid grid-cols-2 gap-2 px-4 py-3 border-b" style={{ borderColor: "var(--border)", background: "var(--surface-2)" }}>
+                                {[
+                                    { label: "제품 외형", value: result.productStyleSheet.mainProduct },
+                                    { label: "비주얼 스타일", value: result.productStyleSheet.visualStyle },
+                                    { label: "컬러 팔레트", value: result.productStyleSheet.colorPalette },
+                                    { label: "환경/배경", value: result.productStyleSheet.environment },
+                                ].filter(x => x.value).map(x => (
+                                    <div key={x.label}>
+                                        <p className="text-[10px] font-bold" style={{ color: "var(--foreground-muted)" }}>{x.label}</p>
+                                        <p className="text-[11px] mt-0.5" style={{ color: "var(--foreground-soft)" }}>{x.value}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        <div className="px-4 py-3" style={{ background: "var(--surface)" }}>
+                            <p className="text-xs leading-relaxed" style={{ color: "var(--foreground-soft)" }}>
+                                {result.productStyleSheet.productSheetPrompt}
+                            </p>
+                        </div>
+                    </div>
+                )}
 
                 <div className="flex gap-2 overflow-x-auto pb-2 mb-4" style={{ scrollbarWidth: "none" }}>
                     {result.sections.map((section, idx) => {

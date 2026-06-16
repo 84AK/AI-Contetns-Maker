@@ -15,12 +15,26 @@ interface Scene {
     action: string;
     script: string;
     caption: string;
+    cameraNote?: string;
+    sfxNote?: string;
+    imagePrompt?: string;
+}
+
+interface SubjectDesignSheet {
+    mainSubject?: string;
+    environment?: string;
+    videoStyle?: string;
+    cameraStyle?: string;
+    colorGrading?: string;
+    subjectSheetPrompt: string;
 }
 
 interface ShortsResult {
     title: string;
     hook: string;
+    subjectDesignSheet?: SubjectDesignSheet;
     scenes: Scene[];
+    fullVideoPrompt?: string;
     musicTip: string;
     hashtags: string[];
     shootingTips: string[];
@@ -85,6 +99,9 @@ export default function ShortsPage() {
     const [showFormPanel, setShowFormPanel] = useState(false);
     const [copiedScene, setCopiedScene] = useState<number | null>(null);
     const [copiedAll, setCopiedAll] = useState(false);
+    const [copiedSubjectSheet, setCopiedSubjectSheet] = useState(false);
+    const [copiedVideoPrompt, setCopiedVideoPrompt] = useState(false);
+    const [copiedSceneImage, setCopiedSceneImage] = useState<number | null>(null);
     const [justSaved, setJustSaved] = useState(false);
     const [savedId, setSavedId] = useState<string | null>(null);
 
@@ -98,9 +115,10 @@ export default function ShortsPage() {
         try {
             const parsed = JSON.parse(saved);
             if (parsed.scenes?.length) {
-                const { _savedId, ...content } = parsed;
+                const { _savedId, _input, ...content } = parsed;
                 setResult(content as ShortsResult);
                 setSavedId(_savedId ?? null);
+                if (_input) setForm(f => ({ ...f, ..._input }));
             }
         } catch { /* 무시 */ }
         localStorage.removeItem("ai_gallery_restore_shorts");
@@ -162,6 +180,22 @@ export default function ShortsPage() {
         } finally {
             setLoading(false);
         }
+    };
+
+    const copySubjectSheet = async (text: string) => {
+        await navigator.clipboard.writeText(text);
+        setCopiedSubjectSheet(true);
+        setTimeout(() => setCopiedSubjectSheet(false), 2000);
+    };
+    const copyVideoPrompt = async (text: string) => {
+        await navigator.clipboard.writeText(text);
+        setCopiedVideoPrompt(true);
+        setTimeout(() => setCopiedVideoPrompt(false), 2000);
+    };
+    const copySceneImagePrompt = async (text: string, num: number) => {
+        await navigator.clipboard.writeText(text);
+        setCopiedSceneImage(num);
+        setTimeout(() => setCopiedSceneImage(null), 2000);
     };
 
     const copyScene = async (scene: Scene) => {
@@ -310,6 +344,40 @@ export default function ShortsPage() {
                                 </div>
                             )}
 
+                            {/* 카메라 노트 */}
+                            {activeScene.cameraNote && (
+                                <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl"
+                                    style={{ background: "#ECFDF5" }}>
+                                    <span className="text-xs shrink-0 mt-0.5">📽️</span>
+                                    <p className="text-xs leading-relaxed" style={{ color: "var(--foreground-soft)" }}>{activeScene.cameraNote}</p>
+                                </div>
+                            )}
+
+                            {/* SFX */}
+                            {activeScene.sfxNote && (
+                                <div>
+                                    <p className="text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "var(--foreground-muted)" }}>🔊 효과음/환경음</p>
+                                    <p className="text-xs px-3 py-2 rounded-xl" style={{ background: "var(--surface-2)", color: "var(--foreground-soft)" }}>{activeScene.sfxNote}</p>
+                                </div>
+                            )}
+
+                            {/* 장면 이미지 프롬프트 */}
+                            {activeScene.imagePrompt && (
+                                <div className="rounded-xl overflow-hidden border" style={{ borderColor: "#10A37F30" }}>
+                                    <div className="flex items-center justify-between px-3 py-2" style={{ background: "#ECFDF5" }}>
+                                        <span className="text-[11px] font-black" style={{ color: "#10A37F" }}>🖼️ 이 장면 GPT Image 프롬프트</span>
+                                        <button onClick={() => copySceneImagePrompt(activeScene.imagePrompt!, activeScene.sceneNum)}
+                                            className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold"
+                                            style={{ background: copiedSceneImage === activeScene.sceneNum ? "#10A37F" : "white", color: copiedSceneImage === activeScene.sceneNum ? "white" : "#10A37F" }}>
+                                            {copiedSceneImage === activeScene.sceneNum ? <Check size={9} /> : <Copy size={9} />} 복사
+                                        </button>
+                                    </div>
+                                    <div className="px-3 py-2.5" style={{ background: "var(--surface)" }}>
+                                        <p className="text-[11px] leading-relaxed" style={{ color: "var(--foreground-soft)" }}>{activeScene.imagePrompt}</p>
+                                    </div>
+                                </div>
+                            )}
+
                             {/* 이 장면 복사 */}
                             <button onClick={() => copyScene(activeScene)}
                                 className="w-full py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2"
@@ -351,6 +419,69 @@ export default function ShortsPage() {
                         </div>
                     )}
                 </div>
+
+                {/* 피사체 디자인 시트 */}
+                {result.subjectDesignSheet?.subjectSheetPrompt && (
+                    <div className="edu-card overflow-hidden mb-4">
+                        <div className="flex items-center justify-between px-4 py-2.5"
+                            style={{ background: "#ECFDF5", borderBottom: "1px solid #10A37F20" }}>
+                            <div>
+                                <p className="text-xs font-black" style={{ color: "#10A37F" }}>🎬 피사체 레퍼런스 시트 — GPT Image 2.0 전용</p>
+                                <p className="text-[10px]" style={{ color: "#10A37F88" }}>이 프롬프트로 먼저 피사체 레퍼런스 시트를 생성한 뒤 각 장면 이미지에 첨부하세요</p>
+                            </div>
+                            <button onClick={() => copySubjectSheet(result.subjectDesignSheet!.subjectSheetPrompt)}
+                                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-bold shrink-0"
+                                style={{ background: copiedSubjectSheet ? "#10A37F" : "white", color: copiedSubjectSheet ? "white" : "#10A37F" }}>
+                                {copiedSubjectSheet ? <Check size={10} /> : <Copy size={10} />}
+                                {copiedSubjectSheet ? "복사됨!" : "프롬프트 복사"}
+                            </button>
+                        </div>
+                        {(result.subjectDesignSheet.mainSubject || result.subjectDesignSheet.videoStyle) && (
+                            <div className="grid grid-cols-2 gap-2 px-4 py-3 border-b" style={{ borderColor: "var(--border)", background: "var(--surface-2)" }}>
+                                {[
+                                    { label: "피사체", value: result.subjectDesignSheet.mainSubject },
+                                    { label: "스타일", value: result.subjectDesignSheet.videoStyle },
+                                    { label: "색감", value: result.subjectDesignSheet.colorGrading },
+                                    { label: "카메라", value: result.subjectDesignSheet.cameraStyle },
+                                ].filter(x => x.value).map(x => (
+                                    <div key={x.label}>
+                                        <p className="text-[10px] font-bold" style={{ color: "var(--foreground-muted)" }}>{x.label}</p>
+                                        <p className="text-[11px] mt-0.5" style={{ color: "var(--foreground-soft)" }}>{x.value}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        <div className="px-4 py-3" style={{ background: "var(--surface)" }}>
+                            <p className="text-xs leading-relaxed" style={{ color: "var(--foreground-soft)" }}>
+                                {result.subjectDesignSheet.subjectSheetPrompt}
+                            </p>
+                        </div>
+                    </div>
+                )}
+
+                {/* 전체 영상 프롬프트 */}
+                {result.fullVideoPrompt && (
+                    <div className="edu-card overflow-hidden mb-4">
+                        <div className="flex items-center justify-between px-4 py-2.5"
+                            style={{ background: "#EEF2FF", borderBottom: "1px solid #4361EE20" }}>
+                            <div>
+                                <p className="text-xs font-black" style={{ color: "#4361EE" }}>🎥 전체 영상 프롬프트 (Sora / Kling / Runway)</p>
+                                <p className="text-[10px]" style={{ color: "#4361EE88" }}>AI 영상 생성 도구에 바로 붙여넣기 — 타임라인 전체 포함</p>
+                            </div>
+                            <button onClick={() => copyVideoPrompt(result.fullVideoPrompt!)}
+                                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-bold shrink-0"
+                                style={{ background: copiedVideoPrompt ? "#4361EE" : "white", color: copiedVideoPrompt ? "white" : "#4361EE" }}>
+                                {copiedVideoPrompt ? <Check size={10} /> : <Copy size={10} />}
+                                {copiedVideoPrompt ? "복사됨!" : "프롬프트 복사"}
+                            </button>
+                        </div>
+                        <div className="px-4 py-3" style={{ background: "var(--surface)" }}>
+                            <p className="text-xs leading-relaxed whitespace-pre-wrap" style={{ color: "var(--foreground-soft)", fontFamily: "monospace" }}>
+                                {result.fullVideoPrompt}
+                            </p>
+                        </div>
+                    </div>
+                )}
 
                 {/* AI 수정 요청 */}
                 <RefinementPanel contentType="shorts" originalInput={form}

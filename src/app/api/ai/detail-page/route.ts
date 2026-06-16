@@ -76,16 +76,43 @@ export async function POST(req: NextRequest) {
         const inputLines = buildInput({ contentType, productName, features, coreContent, target, price, urgency, socialProof, differentiator, ctaText });
 
         const prompt = `당신은 ${role}
-아래 정보를 바탕으로 상세페이지 구성안을 만들어주세요.
+아래 정보를 바탕으로 GPT Image 2.0 + 상세페이지 비주얼 프로덕션 레디 구성안을 만들어주세요.
 
 ${inputLines}
 
 ${sectionGuide}
 
+[제품/브랜드 비주얼 아이덴티티 시트 작성 규칙 - productStyleSheet]
+상세페이지 전체에서 일관되게 유지할 비주얼 요소를 상세히 정의하세요 (모두 영어로):
+- mainProduct: 제품의 외형 상세 (색상, 형태, 소재 질감, 라벨/패키징, 특징적 디자인 요소)
+- environment: 촬영/일러스트 환경 (배경, 소품, 조명 세팅, 스타일링 요소)
+- visualStyle: 비주얼 스타일 (리얼리스틱 제품 사진 / 미니멀 플랫레이 / 라이프스타일 / 일러스트)
+- colorPalette: 브랜드 컬러 팔레트 (색상명 + hex code 포함)
+- productSheetPrompt: GPT Image 2.0으로 제품 비주얼 레퍼런스 시트를 만드는 영어 프롬프트 — 다음 형식을 따르세요:
+  "Create a professional e-commerce product reference sheet for [제품명] detail page production. ONE combined vertical image (1080x1350px). SECTION A — PRODUCT REFERENCE: [제품의 다양한 각도 (front, side, back, top-down), 주요 디테일 클로즈업, 색상 스와치, 소재 질감 샘플]. SECTION B — LIFESTYLE & STYLING GUIDE: [제품 사용 장면, 스타일링 제안, 배경/소품 레퍼런스, 조명 세팅]. Add production notes in clean typography. STYLE: [비주얼 스타일 상세 묘사]. COLOR PALETTE: [브랜드 컬러 hex 포함]. Professional product detail page reference document."
+
+[섹션별 gptPrompt 작성 규칙]
+각 섹션의 gptPrompt는 다음 구조로 작성하세요 (영어):
+"REFERENCE: Use the uploaded product reference sheet for consistent visual style.
+PRODUCT: [제품 외형 상세 — 색상, 형태, 특징적 요소]
+ENVIRONMENT: [해당 섹션에 맞는 배경 및 소품 설정]
+COMPOSITION: [세로형 1080x1350px, 구도 및 레이아웃 설명]
+LIGHTING: [조명 스타일 — 소프트박스/자연광/드라마틱 등]
+STYLE: [사진 스타일 — 상업 광고 사진/라이프스타일/플랫레이 등]
+TEXT OVERLAY: [섹션 제목 및 핵심 카피 배치 제안 (한국어)]
+MOOD: [해당 섹션이 전달해야 할 감성/분위기]"
+
 [출력 형식 - 순수 JSON만, 마크다운 없이]
 {
   "hookHeadline": "상단 후킹 헤드라인 — 구매/수강/클릭 욕구를 자극하는 1줄 (30자 이내)",
   "subHeadline": "부제목 — 핵심 가치 전달 (40자 이내)",
+  "productStyleSheet": {
+    "mainProduct": "제품 외형 상세 (영어)",
+    "environment": "촬영 환경 상세 (영어)",
+    "visualStyle": "비주얼 스타일 (영어)",
+    "colorPalette": "브랜드 컬러 (영어, hex 포함)",
+    "productSheetPrompt": "GPT Image 2.0 제품 레퍼런스 시트 생성 프롬프트 (영어, 300자 이상 상세)"
+  },
   "sections": [
     {
       "type": "섹션타입",
@@ -97,7 +124,7 @@ ${sectionGuide}
       "urgency": "긴급성 문구",
       "button": "버튼 텍스트",
       "note": "부가 안내",
-      "gptPrompt": "이 섹션에 어울리는 GPT Image 이미지 프롬프트 (세로형 상세페이지 이미지, 1080x1350px)"
+      "gptPrompt": "이 섹션용 GPT Image 2.0 프롬프트 (영어, REFERENCE/PRODUCT/ENVIRONMENT/COMPOSITION/LIGHTING/STYLE/TEXT OVERLAY/MOOD 구조)"
     }
   ],
   "seoKeywords": ["키워드1", "키워드2", "키워드3", "키워드4", "키워드5"]
@@ -105,7 +132,8 @@ ${sectionGuide}
 
 중요:
 - content 필드는 실제 설명 텍스트 (단순 슬로건 금지)
-- gptPrompt는 해당 섹션 내용을 시각화하는 구체적 이미지 설명
+- productStyleSheet.productSheetPrompt는 반드시 300자 이상 상세하게 작성
+- 각 섹션 gptPrompt는 반드시 "REFERENCE: Use the uploaded product reference sheet" 문구로 시작
 - ctaText 입력값이 있으면 button 필드에 반드시 사용`;
 
         const result = await model.generateContent(prompt);
@@ -122,7 +150,7 @@ ${sectionGuide}
             .join("\n\n");
 
         await logUsage(profile.id, "detail-page", "generate");
-        const savedId = await saveGeneratedContent({ userId: profile.id, type: "detail-page", title: data.hookHeadline ?? productName, productName, content: data, promptText });
+        const savedId = await saveGeneratedContent({ userId: profile.id, type: "detail-page", title: data.hookHeadline ?? productName, productName, content: { ...data, _input: { contentType, productName, features, coreContent, target, price, urgency, socialProof, differentiator, ctaText } }, promptText });
 
         return NextResponse.json({ ...data, _savedId: savedId });
     } catch (e) {

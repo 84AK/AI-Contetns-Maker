@@ -21,9 +21,19 @@ interface Slide {
     geminiPrompt?: string;
 }
 
+interface VisualIdentitySheet {
+    subject?: string;
+    environment?: string;
+    styleIdentity?: string;
+    colorPalette?: string;
+    consistencyRules?: string[];
+    characterSheetPrompt: string;
+}
+
 interface CardNewsResult {
     title: string;
     styleGuide?: string;
+    visualIdentitySheet?: VisualIdentitySheet;
     slides: Slide[];
 }
 
@@ -129,6 +139,7 @@ export default function CardNewsPage() {
     const [selectedSlide, setSelectedSlide] = useState(0);
     const [copiedSlide, setCopiedSlide] = useState<number | null>(null);
     const [copiedAll, setCopiedAll] = useState(false);
+    const [copiedCharSheet, setCopiedCharSheet] = useState(false);
     const [justSaved, setJustSaved] = useState(false);
 
     const usage = useUsage();
@@ -140,9 +151,10 @@ export default function CardNewsPage() {
         try {
             const parsed = JSON.parse(saved);
             if (parsed.slides?.length) {
-                const { _savedId, ...content } = parsed;
+                const { _savedId, _input, ...content } = parsed;
                 setResult(content as CardNewsResult);
                 setSavedId(_savedId ?? null);
+                if (_input) setForm(f => ({ ...f, ..._input }));
             }
         } catch { /* 무시 */ }
         localStorage.removeItem("ai_gallery_restore_cardnews");
@@ -204,6 +216,12 @@ export default function CardNewsPage() {
         await navigator.clipboard.writeText(prompt);
         setCopiedSlide(slide.slideNum);
         setTimeout(() => setCopiedSlide(null), 2000);
+    };
+
+    const copyCharSheet = async (text: string) => {
+        await navigator.clipboard.writeText(text);
+        setCopiedCharSheet(true);
+        setTimeout(() => setCopiedCharSheet(false), 2000);
     };
 
     const copyAllPrompts = async () => {
@@ -318,6 +336,30 @@ export default function CardNewsPage() {
                         {copiedAll ? "복사됨!" : "전체 프롬프트 복사"}
                     </button>
                 </div>
+
+                {/* 비주얼 아이덴티티 시트 */}
+                {result.visualIdentitySheet?.characterSheetPrompt && (
+                    <div className="edu-card overflow-hidden mb-4">
+                        <div className="flex items-center justify-between px-4 py-2.5"
+                            style={{ background: "#ECFDF5", borderBottom: "1px solid #10A37F20" }}>
+                            <div>
+                                <p className="text-xs font-black" style={{ color: "#10A37F" }}>🎨 비주얼 아이덴티티 시트 — GPT Image 2.0 전용</p>
+                                <p className="text-[10px]" style={{ color: "#10A37F88" }}>이 프롬프트로 먼저 일관된 캐릭터/제품 레퍼런스 시트를 생성하세요</p>
+                            </div>
+                            <button onClick={() => copyCharSheet(result.visualIdentitySheet!.characterSheetPrompt)}
+                                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-bold shrink-0"
+                                style={{ background: copiedCharSheet ? "#10A37F" : "white", color: copiedCharSheet ? "white" : "#10A37F" }}>
+                                {copiedCharSheet ? <Check size={10} /> : <Copy size={10} />}
+                                {copiedCharSheet ? "복사됨!" : "프롬프트 복사"}
+                            </button>
+                        </div>
+                        <div className="px-4 py-3" style={{ background: "var(--surface)" }}>
+                            <p className="text-xs leading-relaxed whitespace-pre-wrap" style={{ color: "var(--foreground-soft)" }}>
+                                {result.visualIdentitySheet.characterSheetPrompt}
+                            </p>
+                        </div>
+                    </div>
+                )}
 
                 {/* 슬라이드 탭 스트립 */}
                 <div className="flex gap-2 overflow-x-auto pb-2 mb-4" style={{ scrollbarWidth: "none" }}>

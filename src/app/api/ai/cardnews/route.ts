@@ -53,36 +53,55 @@ export async function POST(req: NextRequest) {
         const inputSection = buildInputSection({ contentType, businessName, productName, features, coreContent, target, tone, contentGoal, referenceStyle, excludeWords, count });
 
         const prompt = `당신은 ${role}
-아래 정보를 바탕으로 인스타그램 카드뉴스 구성안과 슬라이드별 이미지 생성 프롬프트를 만들어주세요.
+아래 정보를 바탕으로 인스타그램 카드뉴스 구성안과 GPT Image 2.0 수준의 프로덕션 레디 이미지 프롬프트를 만들어주세요.
 
 ${inputSection}
 
 [슬라이드 텍스트 작성 규칙]
 - headline: 15자 이내의 강렬한 제목
 - subtext: 20자 이내의 부제목 또는 보조 문구
-- body: 반드시 포함. 40~120자의 본문 설명 텍스트. 해당 슬라이드의 핵심 내용을 구체적으로 서술. 단순 슬로건이 아닌 실제 정보나 설명을 담을 것.
+- body: 반드시 포함. 40~120자의 본문 설명 텍스트. 구체적 정보나 설명 (단순 슬로건 금지).
 - hashtags: CTA 슬라이드에만 3~5개 포함
 
-[이미지 프롬프트 작성 규칙]
-1. gptPrompt (GPT Image 2.0용):
-   - 자연어 문장 형식으로 서술
-   - "정사각형 1:1 비율 인스타그램 카드뉴스" 명시
-   - 배경색/레이아웃/폰트/텍스트 위치를 구체적으로 설명
-   - headline과 subtext 텍스트를 이미지에 직접 포함
-   - body 내용을 시각적으로 표현하는 일러스트/아이콘/사진 요소 포함
-   - 공통 스타일 가이드와 일관성 유지
+[비주얼 아이덴티티 시트 작성 규칙 - visualIdentitySheet]
+이 카드뉴스 시리즈 전체에서 일관되게 사용할 시각 요소를 상세히 정의하세요:
+- subject: 주인공/제품/캐릭터의 외형 (색상, 형태, 질감, 비율, 특징적 요소 등 영어로 상세 기술)
+- environment: 배경/공간의 상세 설명 (재질, 조명, 분위기, 색상 팔레트 영어로)
+- styleIdentity: 전체 시리즈의 시각 스타일 (일러스트레이션 기법, 색감, 레이아웃 원칙 영어로)
+- colorPalette: 주요 색상 코드 또는 색상명 (영어로, 배경색/강조색/텍스트색 각각)
+- consistencyRules: 모든 슬라이드에서 반드시 지켜야 할 시각적 규칙 3가지 (영어로)
+- characterSheetPrompt: "GPT Image 2.0으로 비주얼 아이덴티티 시트를 생성하는 영어 프롬프트" — 다음 형식을 따르세요:
+  "Create a professional visual identity development board for [브랜드/제품명] instagram card news series. The output must be ONE combined image with two sections. SECTION A — SUBJECT DESIGN: [주인공/제품의 다양한 각도, 표정/상태, 포즈 설명. 실제 색상 스와치 포함]. SECTION B — STYLE REFERENCE GRID: [슬라이드 레이아웃 예시, 배경 패턴, 폰트 스타일, 색상 팔레트 스와치]. Add small handwritten annotation notes. STYLE: [시각 스타일 상세 설명]. LAYOUT: clean vertical composition, professional pre-production reference board feel."
+
+[슬라이드별 이미지 프롬프트 작성 규칙]
+1. gptPrompt (GPT Image 2.0용) — 반드시 다음 구조로 작성:
+   "Square 1:1 ratio Instagram card news, slide [N]/[총수]. REFERENCE: Use the visual identity sheet as strict appearance reference — maintain consistent subject design, color palette, and visual style across all slides.
+   COMPOSITION: [이 슬라이드의 레이아웃 — 상단/중앙/하단 배치 상세 설명]
+   SUBJECT: [이 슬라이드에서 주인공/제품의 구체적 상태, 동작, 표정, 위치]
+   ENVIRONMENT: [배경 색상, 소품, 장식 요소 상세]
+   TEXT OVERLAY: headline '[headline 텍스트]' in [폰트 스타일, 색상, 크기, 위치]. subtext '[subtext 텍스트]' in [스타일, 위치].
+   LIGHTING: [조명 방향, 강도, 색온도]
+   MOOD: [감성/분위기 키워드 3개]
+   STYLE: [최종 스타일 요약], professional instagram marketing card, masterpiece quality"
 
 2. geminiPrompt (Nanobanana pro용):
-   - 구조형 키워드 나열 방식: "<피사체> <동작/상태> <장면/배경> <스타일>"
+   - 구조형 키워드 나열: "<피사체 상세> <동작/상태> <장면/배경> <조명/색감> <스타일>"
    - 마지막에 반드시 "이미지 생성" 포함
    - "정사각형 1:1 비율" 명시
-   - 텍스트 삽입이 필요하면 명시
-   - 분위기/색감/조명 키워드를 콤마로 구분
+   - 분위기/색감/조명 키워드 콤마 구분
 
 [출력 형식 - 순수 JSON만, 마크다운 없이]
 {
   "title": "카드뉴스 시리즈 제목 (20자 이내)",
-  "styleGuide": "모든 슬라이드에 공통 적용할 시각 스타일 한 줄 요약",
+  "styleGuide": "모든 슬라이드 공통 시각 스타일 한 줄 요약",
+  "visualIdentitySheet": {
+    "subject": "주인공/제품 외형 상세 (영어)",
+    "environment": "배경/공간 상세 (영어)",
+    "styleIdentity": "전체 시각 스타일 (영어)",
+    "colorPalette": "배경: #xxx / 강조: #xxx / 텍스트: #xxx",
+    "consistencyRules": ["rule1 (영어)", "rule2 (영어)", "rule3 (영어)"],
+    "characterSheetPrompt": "GPT Image 2.0 비주얼 아이덴티티 시트 생성 프롬프트 (영어, 상세)"
+  },
   "slides": [
     {
       "slideNum": 1,
@@ -90,8 +109,8 @@ ${inputSection}
       "headline": "헤드라인 (15자 이내)",
       "subtext": "부제목 (20자 이내)",
       "body": "본문 설명 텍스트 (40~120자, 반드시 작성)",
-      "gptPrompt": "...",
-      "geminiPrompt": "..."
+      "gptPrompt": "GPT Image 2.0용 상세 영어 프롬프트",
+      "geminiPrompt": "Nanobanana pro용 키워드형 한국어 프롬프트"
     }
   ]
 }
@@ -101,8 +120,9 @@ ${generateSlideGuide(contentType, count)}
 
 중요:
 1. 모든 슬라이드에 body 필드를 반드시 작성하세요. 빈 문자열 금지.
-2. body는 단순 슬로건("최고의 선택!")이 아닌 실제 내용("3단계로 구성된 실습 중심 수업으로, 기초 개념부터 실전 활용까지 단계적으로 배웁니다.")이어야 합니다.
-3. 모든 슬라이드의 이미지 스타일이 하나의 시리즈처럼 일관되어야 합니다.`;
+2. visualIdentitySheet.characterSheetPrompt는 반드시 300자 이상의 상세한 영어 프롬프트로 작성하세요.
+3. 각 슬라이드 gptPrompt는 반드시 REFERENCE / COMPOSITION / SUBJECT / ENVIRONMENT / TEXT OVERLAY / LIGHTING / MOOD / STYLE 구조를 포함하세요.
+4. 모든 슬라이드가 하나의 일관된 시리즈로 느껴지도록 스타일을 통일하세요.`;
 
         const result = await model.generateContent(prompt);
         const text = result.response.text().trim();
@@ -122,7 +142,10 @@ ${generateSlideGuide(contentType, count)}
             type: "cardnews",
             title: data.title ?? productName,
             productName,
-            content: data,
+            content: {
+                ...data,
+                _input: { contentType, businessName, productName, features, coreContent, target, tone, excludeWords, referenceStyle, contentGoal, slideCount },
+            },
             promptText: allPrompts,
         });
 

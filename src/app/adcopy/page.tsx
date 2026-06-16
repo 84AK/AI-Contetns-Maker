@@ -10,12 +10,22 @@ import { usePersistedForm } from "@/lib/hooks/usePersistedForm";
 interface Headline { type: string; text: string; hook: string; }
 interface BodyText { length: string; label: string; text: string; }
 interface CTA { style: string; text: string; }
+interface VisualIdentityCard {
+    brandColor?: string;
+    visualStyle?: string;
+    productAppearance?: string;
+    backgroundSetting?: string;
+    adCardPrompt: string;
+}
+interface AdImagePrompt { headlineType: string; prompt: string; }
 
 interface AdCopyResult {
     productName: string;
     platform: string;
     goal: string;
+    visualIdentityCard?: VisualIdentityCard;
     headlines: Headline[];
+    adImagePrompts?: AdImagePrompt[];
     bodyTexts: BodyText[];
     ctas: CTA[];
     hashtags: string[];
@@ -59,6 +69,8 @@ export default function AdCopyPage() {
     const [error, setError] = useState("");
     const [showFormPanel, setShowFormPanel] = useState(false);
     const [copiedKey, setCopiedKey] = useState<string | null>(null);
+    const [copiedAdCard, setCopiedAdCard] = useState(false);
+    const [expandedImgPrompt, setExpandedImgPrompt] = useState<string | null>(null);
     const [justSaved, setJustSaved] = useState(false);
 
     const usage = useUsage();
@@ -69,7 +81,11 @@ export default function AdCopyPage() {
         if (!saved) return;
         try {
             const parsed = JSON.parse(saved);
-            if (parsed.headlines?.length) setResult(parsed as AdCopyResult);
+            if (parsed.headlines?.length) {
+                const { _input, ...content } = parsed;
+                setResult(content as AdCopyResult);
+                if (_input) setForm(f => ({ ...f, ..._input }));
+            }
         } catch { /* 무시 */ }
         localStorage.removeItem("ai_gallery_restore_adcopy");
     }, []);
@@ -102,6 +118,12 @@ export default function AdCopyPage() {
         } finally {
             setLoading(false);
         }
+    };
+
+    const copyAdCard = async (text: string) => {
+        await navigator.clipboard.writeText(text);
+        setCopiedAdCard(true);
+        setTimeout(() => setCopiedAdCard(false), 2000);
     };
 
     const copy = async (text: string, key: string) => {
@@ -276,6 +298,45 @@ export default function AdCopyPage() {
                             </div>
                         )}
 
+                        {/* 광고 비주얼 아이덴티티 카드 */}
+                        {result.visualIdentityCard?.adCardPrompt && (
+                            <div className="edu-card overflow-hidden">
+                                <div className="flex items-center justify-between px-4 py-2.5"
+                                    style={{ background: "#ECFDF5", borderBottom: "1px solid #10A37F20" }}>
+                                    <div>
+                                        <p className="text-xs font-black" style={{ color: "#10A37F" }}>🎨 광고 비주얼 레퍼런스 카드 — GPT Image 2.0 전용</p>
+                                        <p className="text-[10px]" style={{ color: "#10A37F88" }}>이 프롬프트로 먼저 광고 비주얼 가이드를 생성한 뒤 각 광고 이미지에 첨부하세요</p>
+                                    </div>
+                                    <button onClick={() => copyAdCard(result.visualIdentityCard!.adCardPrompt)}
+                                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-bold shrink-0"
+                                        style={{ background: copiedAdCard ? "#10A37F" : "white", color: copiedAdCard ? "white" : "#10A37F" }}>
+                                        {copiedAdCard ? <Check size={10} /> : <Copy size={10} />}
+                                        {copiedAdCard ? "복사됨!" : "프롬프트 복사"}
+                                    </button>
+                                </div>
+                                {(result.visualIdentityCard.brandColor || result.visualIdentityCard.visualStyle) && (
+                                    <div className="grid grid-cols-2 gap-2 px-4 py-3 border-b" style={{ borderColor: "var(--border)", background: "var(--surface-2)" }}>
+                                        {[
+                                            { label: "브랜드 컬러", value: result.visualIdentityCard.brandColor },
+                                            { label: "비주얼 스타일", value: result.visualIdentityCard.visualStyle },
+                                            { label: "제품 외형", value: result.visualIdentityCard.productAppearance },
+                                            { label: "배경/환경", value: result.visualIdentityCard.backgroundSetting },
+                                        ].filter(x => x.value).map(x => (
+                                            <div key={x.label}>
+                                                <p className="text-[10px] font-bold" style={{ color: "var(--foreground-muted)" }}>{x.label}</p>
+                                                <p className="text-[11px] mt-0.5" style={{ color: "var(--foreground-soft)" }}>{x.value}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                                <div className="px-4 py-3" style={{ background: "var(--surface)" }}>
+                                    <p className="text-xs leading-relaxed" style={{ color: "var(--foreground-soft)" }}>
+                                        {result.visualIdentityCard.adCardPrompt}
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
                         {/* 헤드라인 */}
                         <div className="edu-card p-5 space-y-3">
                             <div className="flex items-center gap-2 mb-1">
@@ -284,9 +345,11 @@ export default function AdCopyPage() {
                             </div>
                             {result.headlines.map((h, i) => {
                                 const color = HEADLINE_COLORS[h.type] ?? "var(--primary)";
+                                const imgPrompt = result.adImagePrompts?.find(p => p.headlineType === h.type);
+                                const isExpanded = expandedImgPrompt === h.type;
                                 return (
-                                    <div key={i} className="p-4 rounded-xl border" style={{ borderColor: "var(--border)", background: "var(--surface-2)" }}>
-                                        <div className="flex items-start justify-between gap-2">
+                                    <div key={i} className="rounded-xl border overflow-hidden" style={{ borderColor: "var(--border)" }}>
+                                        <div className="flex items-start justify-between gap-2 p-4" style={{ background: "var(--surface-2)" }}>
                                             <div className="flex-1 min-w-0">
                                                 <span className="text-[11px] font-bold px-2 py-0.5 rounded-full mb-1.5 inline-block"
                                                     style={{ background: color + "18", color }}>
@@ -295,8 +358,28 @@ export default function AdCopyPage() {
                                                 <p className="text-base font-black leading-snug" style={{ color: "var(--foreground)" }}>{h.text}</p>
                                                 <p className="text-xs mt-1.5 leading-relaxed" style={{ color: "var(--foreground-soft)" }}>💡 {h.hook}</p>
                                             </div>
-                                            <CopyBtn text={h.text} id={`h-${i}`} />
+                                            <div className="flex flex-col gap-1 shrink-0">
+                                                <CopyBtn text={h.text} id={`h-${i}`} />
+                                                {imgPrompt && (
+                                                    <button onClick={() => setExpandedImgPrompt(isExpanded ? null : h.type)}
+                                                        className="p-1.5 rounded-lg text-[9px] font-bold"
+                                                        style={{ background: isExpanded ? "#10A37F" : "var(--surface)", color: isExpanded ? "white" : "#10A37F", border: "1px solid #10A37F30" }}>
+                                                        🖼️
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
+                                        {imgPrompt && isExpanded && (
+                                            <div>
+                                                <div className="flex items-center justify-between px-3 py-2" style={{ background: "#ECFDF5" }}>
+                                                    <span className="text-[11px] font-black" style={{ color: "#10A37F" }}>🖼️ 광고 이미지 GPT Image 프롬프트</span>
+                                                    <CopyBtn text={imgPrompt.prompt} id={`ip-${i}`} />
+                                                </div>
+                                                <div className="px-3 py-2.5" style={{ background: "var(--surface)" }}>
+                                                    <p className="text-[11px] leading-relaxed" style={{ color: "var(--foreground-soft)" }}>{imgPrompt.prompt}</p>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 );
                             })}

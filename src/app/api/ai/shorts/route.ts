@@ -68,8 +68,9 @@ export async function POST(req: NextRequest) {
         const dur = parseInt(duration ?? "30");
         const sceneGuide = (TYPE_SCENE_GUIDE[contentType] ?? TYPE_SCENE_GUIDE.promotion).replace(/\$\{0\}/g, String(dur));
 
+        const totalSec = dur;
         const prompt = `당신은 ${role}
-아래 정보를 바탕으로 쇼츠 스크립트를 만들어주세요.
+아래 정보를 바탕으로 GPT Image 2.0 + AI 영상 생성 수준의 프로덕션 레디 쇼츠 기획서를 만들어주세요.
 
 [입력 정보]
 - 유형: ${contentType}
@@ -82,28 +83,80 @@ ${hookIdea ? `- 훅 아이디어: ${hookIdea}` : ""}
 
 ${sceneGuide}
 
+[피사체/주제 디자인 시트 작성 규칙 - subjectDesignSheet]
+영상 전체에서 일관되게 유지할 비주얼 요소를 상세히 정의하세요 (모두 영어로):
+- mainSubject: 주인공/제품의 외형 상세 (색상, 형태, 질감, 특징적 요소, 착용물/라벨 등)
+- environment: 촬영 환경 상세 (장소, 소품, 조명 세팅, 배경 요소)
+- videoStyle: 영상 스타일 (리얼리스틱/시네마틱/브이로그 등)
+- cameraStyle: 카메라 스타일 (핸드헬드/스테디캠/드론 등)
+- colorGrading: 색감/분위기 (웜톤/쿨톤, LUT 스타일, 밝기)
+- subjectSheetPrompt: GPT Image 2.0으로 피사체 레퍼런스 시트를 만드는 영어 프롬프트 — 다음 형식을 따르세요:
+  "Create a professional production reference sheet for [제품/주인공명] short-form video content. ONE combined vertical image. SECTION A — SUBJECT REFERENCE: [피사체의 다양한 각도, 상태, 표정/표면 질감 상세 묘사. 실제 색상 스와치 포함]. SECTION B — ENVIRONMENT & PROPS REFERENCE: [촬영 공간, 소품 배치, 조명 세팅, 카메라 앵글 예시]. Add production notes in handwriting style. STYLE: [영상 스타일 상세]. MOOD: [분위기 키워드]. Professional production design document."
+
+[장면별 비주얼 노트 작성 규칙]
+각 장면에 다음 필드를 추가하세요:
+- cameraNote: 카메라 앵글/움직임/렌즈 (영어로, 예: "extreme close-up of product label, slow rack focus to background")
+- sfxNote: 효과음/환경음 (한국어, 예: "커피 내려지는 소리, 잔잔한 재즈")
+- imagePrompt: 이 장면을 스틸 이미지로 만들 GPT Image 2.0 프롬프트 (영어, 피사체 레퍼런스 참조 명시)
+
+[전체 영상 프롬프트 작성 규칙 - fullVideoPrompt]
+AI 영상 생성 도구(Sora/Kling/Runway)용 전체 영상 프롬프트를 작성하세요. 반드시 다음 구조를 포함하세요:
+"TITLE: [영상 제목]
+
+REFERENCE: Use the uploaded subject reference sheet as strict visual reference. Maintain consistent [주인공/제품] appearance throughout.
+
+SUBJECTS: [주인공/제품의 상세 외형 설명, 착용물, 특징]
+
+ENVIRONMENT: [촬영 환경 상세 — 장소, 소품, 조명, 배경]
+
+STYLE: [영상 스타일, 색감, 카메라 무드]
+
+AVOID: No text overlays. No watermarks. No logos. [기타 피해야 할 요소]
+
+AUDIO: [배경음악 방향, SFX]
+
+CAMERA: [카메라 스타일, 무빙, 프레이밍]
+
+TIMELINE:
+[각 장면의 타임코드 - 예: 0:00-0:03, 0:03-0:10 등 ${totalSec}초 분량 전체 기술]
+
+FINAL SHOT: [마지막 장면 상세]"
+
 [출력 형식 - 순수 JSON만, 마크다운 없이]
 {
   "title": "영상 제목 (클릭 유도, 30자 이내)",
-  "hook": "첫 3초 후킹 멘트 — 시청자를 멈추게 하는 강력한 첫 마디 (구체적이고 직접적으로)",
+  "hook": "첫 3초 후킹 멘트 (강력하고 직접적으로)",
+  "subjectDesignSheet": {
+    "mainSubject": "피사체 외형 상세 (영어)",
+    "environment": "촬영 환경 상세 (영어)",
+    "videoStyle": "영상 스타일 (영어)",
+    "cameraStyle": "카메라 스타일 (영어)",
+    "colorGrading": "색감/분위기 (영어)",
+    "subjectSheetPrompt": "GPT Image 2.0 피사체 레퍼런스 시트 생성 프롬프트 (영어, 상세)"
+  },
   "scenes": [
     {
       "sceneNum": 1,
       "time": "0-3초",
-      "action": "촬영 행동 지시 — 무엇을 어떻게 찍는지 구체적으로",
-      "script": "말할 내용 또는 나레이션 (실제 말하는 텍스트)",
-      "caption": "화면에 표시될 자막 (임팩트 있게)"
+      "action": "촬영 행동 지시 (카메라 각도, 소품, 행동 구체적으로)",
+      "script": "실제 말하는 대사 (자연스러운 구어체)",
+      "caption": "화면 자막 (임팩트 있게)",
+      "cameraNote": "카메라 앵글/무빙/렌즈 (영어)",
+      "sfxNote": "효과음/환경음 (한국어)",
+      "imagePrompt": "이 장면 스틸 이미지용 GPT Image 2.0 프롬프트 (영어, 상세)"
     }
   ],
-  "musicTip": "추천 배경음악 장르/분위기 (구체적으로)",
+  "fullVideoPrompt": "AI 영상 생성 도구용 전체 영상 프롬프트 (영어, 타임라인 포함, 위 형식 준수)",
+  "musicTip": "추천 배경음악 장르/분위기",
   "hashtags": ["해시태그1", "해시태그2", "해시태그3", "해시태그4", "해시태그5", "해시태그6"],
   "shootingTips": ["촬영 팁1 (구체적)", "촬영 팁2", "촬영 팁3"]
 }
 
 중요:
-- script는 실제로 말하는 자연스러운 대사 (단순 지시어 금지)
-- action은 카메라 각도, 소품, 행동을 구체적으로 기술
-- hookIdea 입력값이 있으면 hook에 적극 반영`;
+1. script는 실제로 말하는 자연스러운 대사 (단순 지시어 금지)
+2. subjectDesignSheet.subjectSheetPrompt는 반드시 300자 이상 상세하게 작성
+3. fullVideoPrompt는 반드시 TIMELINE 섹션에 각 장면의 타임코드와 행동을 ${totalSec}초 전체 기술
+4. 각 장면 imagePrompt는 "REFERENCE: Use the uploaded subject reference sheet" 문구로 시작`;
 
         const result = await model.generateContent(prompt);
         const text = result.response.text().trim();
@@ -118,7 +171,7 @@ ${sceneGuide}
             .join("\n");
 
         await logUsage(profile.id, "shorts", "generate");
-        const savedId = await saveGeneratedContent({ userId: profile.id, type: "shorts", title: data.title ?? productName, productName, content: data, promptText });
+        const savedId = await saveGeneratedContent({ userId: profile.id, type: "shorts", title: data.title ?? productName, productName, content: { ...data, _input: { contentType, productName, coreContent, hookIdea, target, mood, duration } }, promptText });
 
         return NextResponse.json({ ...data, _savedId: savedId });
     } catch (e) {
