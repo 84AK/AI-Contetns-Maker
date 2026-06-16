@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Images, Layers, FileText, Film, Trash2, Copy, Check, Sparkles, ChevronDown, ChevronUp, ExternalLink, LogIn, RefreshCw, ClipboardList, PenLine } from "lucide-react";
+import { Images, Layers, FileText, Film, Trash2, Copy, Check, Sparkles, ChevronDown, ChevronUp, ExternalLink, LogIn, RefreshCw, ClipboardList, PenLine, Pencil, Link2 } from "lucide-react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
@@ -140,6 +140,11 @@ export default function GalleryPage() {
     const [filter, setFilter] = useState<"all" | ContentType | "planner">("all");
     const [copiedId, setCopiedId] = useState<string | null>(null);
     const [expandedId, setExpandedId] = useState<string | null>(null);
+    const [editingId, setEditingId] = useState<string | null>(null);
+    const [editTitle, setEditTitle] = useState("");
+    const [savingTitle, setSavingTitle] = useState(false);
+    const [copiedLink, setCopiedLink] = useState<string | null>(null);
+    const editInputRef = useRef<HTMLInputElement>(null);
 
     const fetchItems = useCallback(async (uid: string) => {
         setLoading(true);
@@ -183,6 +188,37 @@ export default function GalleryPage() {
         await navigator.clipboard.writeText(item.prompt_text);
         setCopiedId(item.id);
         setTimeout(() => setCopiedId(null), 2000);
+    };
+
+    const startEdit = (item: GeneratedContent) => {
+        setEditingId(item.id);
+        setEditTitle(item.title);
+        setTimeout(() => editInputRef.current?.focus(), 50);
+    };
+
+    const saveTitle = async (id: string) => {
+        if (!editTitle.trim() || savingTitle) return;
+        setSavingTitle(true);
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) { setSavingTitle(false); return; }
+
+        const res = await fetch("/api/ai/rename", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+            body: JSON.stringify({ id, title: editTitle }),
+        });
+        if (res.ok) {
+            setItems(prev => prev.map(i => i.id === id ? { ...i, title: editTitle } : i));
+        }
+        setSavingTitle(false);
+        setEditingId(null);
+    };
+
+    const copyShareLink = async (item: GeneratedContent) => {
+        const url = `${window.location.origin}/gallery?open=${item.id}`;
+        await navigator.clipboard.writeText(url);
+        setCopiedLink(item.id);
+        setTimeout(() => setCopiedLink(null), 2000);
     };
 
     const openInEditor = (item: GeneratedContent) => {
@@ -366,7 +402,37 @@ export default function GalleryPage() {
                                                     )}
                                                     <span className="text-xs" style={{ color: "var(--foreground-muted)" }}>{timeAgo(item.created_at)}</span>
                                                 </div>
-                                                <p className="text-sm font-black leading-snug" style={{ color: "var(--foreground)" }}>{item.title}</p>
+                                                {editingId === item.id ? (
+                                                    <div className="flex items-center gap-1.5 mt-0.5">
+                                                        <input
+                                                            ref={editInputRef}
+                                                            value={editTitle}
+                                                            onChange={e => setEditTitle(e.target.value)}
+                                                            onKeyDown={e => { if (e.key === "Enter") saveTitle(item.id); if (e.key === "Escape") setEditingId(null); }}
+                                                            className="flex-1 text-sm font-black px-2 py-1 rounded-lg border outline-none min-w-0"
+                                                            style={{ borderColor: cfg.color, color: "var(--foreground)", background: "var(--surface)" }}
+                                                        />
+                                                        <button onClick={() => saveTitle(item.id)} disabled={savingTitle}
+                                                            className="px-2.5 py-1 rounded-lg text-xs font-bold shrink-0"
+                                                            style={{ background: cfg.color, color: "white" }}>
+                                                            {savingTitle ? "..." : "저장"}
+                                                        </button>
+                                                        <button onClick={() => setEditingId(null)}
+                                                            className="px-2 py-1 rounded-lg text-xs font-bold shrink-0"
+                                                            style={{ background: "var(--surface-2)", color: "var(--foreground-muted)" }}>
+                                                            취소
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex items-center gap-1.5 group">
+                                                        <p className="text-sm font-black leading-snug" style={{ color: "var(--foreground)" }}>{item.title}</p>
+                                                        <button onClick={() => startEdit(item)}
+                                                            className="opacity-0 group-hover:opacity-100 p-0.5 rounded transition-opacity"
+                                                            style={{ color: "var(--foreground-muted)" }}>
+                                                            <Pencil size={11} />
+                                                        </button>
+                                                    </div>
+                                                )}
                                                 <p className="text-xs mt-0.5" style={{ color: "var(--foreground-muted)" }}>{item.product_name}</p>
                                             </div>
                                         </div>
@@ -419,6 +485,18 @@ export default function GalleryPage() {
                                                 {copiedId === item.id ? "복사됨" : "프롬프트"}
                                             </button>
                                         )}
+
+                                        {/* 링크 복사 */}
+                                        <button
+                                            onClick={() => copyShareLink(item)}
+                                            className="flex items-center gap-1 px-3 py-2.5 rounded-xl text-xs font-bold transition-all"
+                                            style={{
+                                                background: copiedLink === item.id ? "var(--secondary)" : "var(--surface-2)",
+                                                color: copiedLink === item.id ? "white" : "var(--foreground-muted)",
+                                            }}>
+                                            {copiedLink === item.id ? <Check size={12} /> : <Link2 size={12} />}
+                                            {copiedLink === item.id ? "복사됨" : "링크"}
+                                        </button>
 
                                         {/* 새로 만들기 */}
                                         <Link
