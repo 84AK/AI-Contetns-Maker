@@ -17,6 +17,7 @@ import {
     LogOut,
     User,
     ClipboardList,
+    Shield,
 } from "lucide-react";
 import ThemeToggle from "@/components/common/ThemeToggle";
 import { useAppStore } from "@/store/useAppStore";
@@ -41,13 +42,32 @@ export default function Sidebar() {
     const [mounted, setMounted] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [user, setUser] = useState<SupabaseUser | null>(null);
+    const [isAdmin, setIsAdmin] = useState(false);
 
     useEffect(() => { setMounted(true); }, []);
 
     useEffect(() => {
-        supabase.auth.getSession().then(({ data: { session } }) => setUser(session?.user ?? null));
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+        supabase.auth.getSession().then(async ({ data: { session } }) => {
             setUser(session?.user ?? null);
+            if (session?.access_token) {
+                const res = await fetch("/api/usage", { headers: { Authorization: `Bearer ${session.access_token}` } });
+                if (res.ok) {
+                    const d = await res.json();
+                    setIsAdmin(d.plan === "admin");
+                }
+            }
+        });
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_, session) => {
+            setUser(session?.user ?? null);
+            if (session?.access_token) {
+                const res = await fetch("/api/usage", { headers: { Authorization: `Bearer ${session.access_token}` } });
+                if (res.ok) {
+                    const d = await res.json();
+                    setIsAdmin(d.plan === "admin");
+                }
+            } else {
+                setIsAdmin(false);
+            }
         });
         return () => subscription.unsubscribe();
     }, []);
@@ -134,6 +154,21 @@ export default function Sidebar() {
                                 );
                             })}
                         </div>
+
+                        {/* 모바일 관리자 */}
+                        {isAdmin && (
+                            <div className="px-4 pb-1">
+                                <Link
+                                    href="/admin"
+                                    onClick={() => setMobileMenuOpen(false)}
+                                    className="flex items-center gap-3.5 px-4 py-3 rounded-2xl"
+                                    style={{ background: "#EDE9FE", color: "#7C3AED", fontWeight: 700 }}
+                                >
+                                    <Shield size={18} strokeWidth={2} />
+                                    <span className="text-[15px]">관리자 대시보드</span>
+                                </Link>
+                            </div>
+                        )}
 
                         {/* 모바일 로그인/유저 */}
                         <div className="px-4 pb-4 pt-1" style={{ borderTop: "1px solid var(--border)" }}>
@@ -288,6 +323,30 @@ export default function Sidebar() {
                         );
                     })}
                 </nav>
+
+                {/* 관리자 링크 */}
+                {isAdmin && (
+                    <div style={{ padding: expanded ? "0 10px 6px" : "0 0 6px", display: "flex", justifyContent: expanded ? "stretch" : "center" }}>
+                        <Link
+                            href="/admin"
+                            title={!expanded ? "관리자 대시보드" : undefined}
+                            className="flex items-center rounded-xl transition-all duration-150"
+                            style={{
+                                gap: expanded ? 10 : 0,
+                                padding: expanded ? "8px 12px" : "10px",
+                                width: expanded ? "100%" : 44,
+                                height: 40,
+                                justifyContent: expanded ? "flex-start" : "center",
+                                background: pathname.startsWith("/admin") ? "#EDE9FE" : "var(--surface-2)",
+                                color: pathname.startsWith("/admin") ? "#7C3AED" : "var(--foreground-muted)",
+                                fontWeight: 700,
+                            }}
+                        >
+                            <Shield size={16} strokeWidth={2} className="shrink-0" />
+                            {expanded && <span className="text-[13px]">관리자</span>}
+                        </Link>
+                    </div>
+                )}
 
                 {/* 로그인/유저 영역 */}
                 <div
