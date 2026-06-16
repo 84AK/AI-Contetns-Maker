@@ -76,6 +76,7 @@ const CONTENT_TYPES = [
     { value: "education", emoji: "📚", label: "수업/강의 소개", desc: "교육 콘텐츠 안내" },
     { value: "tutorial", emoji: "🔧", label: "사용법 튜토리얼", desc: "단계별 사용 안내" },
     { value: "info", emoji: "💡", label: "정보/지식 전달", desc: "유용한 정보 공유" },
+    { value: "story", emoji: "📖", label: "썰 풀기 스토리", desc: "공감 → 자연스럽게 제품 공개" },
 ];
 
 const TYPE_FORM_CONFIG: Record<string, {
@@ -108,18 +109,28 @@ const TYPE_FORM_CONFIG: Record<string, {
         coreContentLabel: "전달할 핵심 내용", coreContentPlaceholder: "카드뉴스에 담을 정보를 자유롭게 써주세요.\n예:\n1. 오전 기상 후 물 한 잔 - 신진대사 활성화\n2. 5분 스트레칭 - 혈액순환 개선\n3. 간단한 단백질 아침 식사 - 집중력 유지",
         coreContentRequired: true,
     },
+    story: {
+        subjectLabel: "썰 소재 / 브랜드명", subjectPlaceholder: "예: 창업 첫 달 매출 0원이었던 내가, 망했던 카페를 살린 이야기",
+        featuresLabel: "소개할 제품/서비스", featuresPlaceholder: "예: 수제 캔들, SNS 마케팅 강의, 수제 아메리카노",
+        coreContentLabel: "스토리 흐름 (선택)", coreContentPlaceholder: "대략적인 이야기 흐름을 써주세요.\n예:\n- 처음엔 아무것도 몰랐던 내가 창업\n- 첫 달 매출 0원의 절망\n- 우연히 SNS 마케팅을 배우게 됨\n- 그게 바로 이 강의였어요",
+        coreContentRequired: false,
+    },
 };
 
 const slideTypeLabel: Record<string, string> = {
     cover: "표지", problem: "공감", solution: "해결",
     feature1: "특징 1", feature2: "특징 2", feature3: "특징 3",
     review: "후기", comparison: "비교", howto: "사용법", cta: "행동 유도",
+    story_hook: "훅", story_conflict: "갈등", story_turning: "전환",
+    story_resolve: "해결", story_reveal: "공개", story_proof: "증거",
 };
 
 const slideTypeColor: Record<string, string> = {
     cover: "#FF6B35", problem: "#F59E0B", solution: "#06D6A0",
     feature1: "#4361EE", feature2: "#4361EE", feature3: "#4361EE",
     review: "#8B5CF6", comparison: "#EC4899", howto: "#0EA5E9", cta: "#FF6B35",
+    story_hook: "#8B5CF6", story_conflict: "#EF4444", story_turning: "#F59E0B",
+    story_resolve: "#06D6A0", story_reveal: "#FF6B35", story_proof: "#4361EE",
 };
 
 export default function CardNewsPage() {

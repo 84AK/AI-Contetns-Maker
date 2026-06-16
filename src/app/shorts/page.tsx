@@ -48,6 +48,7 @@ const CONTENT_TYPES = [
     { value: "education", emoji: "📚", label: "수업/강의 소개" },
     { value: "tutorial", emoji: "🔧", label: "사용법 튜토리얼" },
     { value: "info", emoji: "💡", label: "정보/지식 전달" },
+    { value: "story", emoji: "📖", label: "썰 풀기 스토리" },
 ];
 
 const TYPE_SHORTS_CONFIG: Record<string, {
@@ -79,6 +80,12 @@ const TYPE_SHORTS_CONFIG: Record<string, {
         coreContentLabel: "전달할 핵심 내용", coreContentPlaceholder: "예:\n1. 기상 후 물 한 잔 - 신진대사 활성화\n2. 5분 스트레칭\n3. 단백질 아침 식사",
         coreContentRequired: true,
         hookLabel: "놀라운 사실 / 훅 문구", hookPlaceholder: "예: '아침에 이것만 해도 생산성이 23% 올라갑니다'",
+    },
+    story: {
+        subjectLabel: "썰 소재 / 브랜드명", subjectPlaceholder: "예: 창업 첫 달 매출 0원이었던 내가, 망했던 카페를 살린 이야기",
+        coreContentLabel: "소개할 제품/서비스 + 스토리 흐름", coreContentPlaceholder: "예:\n- 소개할 것: 수제 캔들 / SNS 마케팅 강의\n- 흐름: 처음엔 아무것도 몰랐던 내가 → 첫 달 매출 0원 → 우연히 발견 → 지금은 월 100만원",
+        coreContentRequired: true,
+        hookLabel: "첫 3초 공감 훅 (선택)", hookPlaceholder: "예: '저 솔직히 말할게요, 저도 몰랐어요' / '이거 아무한테도 안 말했는데...'",
     },
 };
 
