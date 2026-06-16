@@ -2,11 +2,11 @@
 
 import { useEffect } from "react";
 import { AlertCircle, CheckCircle2, Info, X } from "lucide-react";
-import { useGameStore } from "@/store/useGameStore";
+import { useAppStore } from "@/store/useAppStore";
 
 export default function GlobalToast() {
-    const toast = useGameStore(s => s.globalToast);
-    const setGlobalToast = useGameStore(s => s.setGlobalToast);
+    const toast = useAppStore(s => s.globalToast);
+    const setGlobalToast = useAppStore(s => s.setGlobalToast);
 
     // 토스트 표시 시 5초 후 자동 닫기
     useEffect(() => {

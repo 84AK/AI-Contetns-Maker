@@ -52,3 +52,4 @@ next-env.d.ts
 docs/.bkit-memory.json
 docs/.pdca-status.json
 docs/.pdca-snapshots/
+.playwright-mcp/

@@ -7,7 +7,6 @@ import {
     ArrowLeft,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { usePushNotification } from "@/lib/push/usePushNotification";
 
 type DeviceTab = "iphone" | "android" | "ipad" | "pc";
 
@@ -135,7 +134,13 @@ const GUIDES: Record<DeviceTab, {
 export default function InstallGuidePage() {
     const router = useRouter();
     const [activeTab, setActiveTab] = useState<DeviceTab>("iphone");
-    const { permission, isSubscribed, isSupported, isLoading, subscribe, unsubscribe } = usePushNotification();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const permission = "default" as any;
+    const isSubscribed = false;
+    const isSupported = false;
+    const isLoading = false;
+    const subscribe = async () => false;
+    const unsubscribe = async () => {};
     const [pushResult, setPushResult] = useState<"success" | "denied" | null>(null);
     const guide = GUIDES[activeTab];
 

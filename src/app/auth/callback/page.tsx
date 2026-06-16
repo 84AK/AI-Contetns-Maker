@@ -14,30 +14,38 @@ function AuthCallbackInner() {
         const code = searchParams.get("code");
 
         const processAuth = async () => {
-            // 이미 세션이 있는지 먼저 확인 (OAuth 직후 race condition 방지)
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session) {
-                router.push("/feed");
-                return;
-            }
-
             if (code) {
-                const { error } = await supabase.auth.exchangeCodeForSession(code);
-                if (error) {
-                    // 에러가 나더라도 세션이 생성되었을 수 있으므로 다시 한번 확인
-                    const { data: { session: retrySession } } = await supabase.auth.getSession();
-                    if (retrySession) {
-                        router.push("/feed");
-                    } else {
-                        router.push("/login?error=auth");
-                    }
-                } else {
-                    router.push("/feed");
-                }
+                await supabase.auth.exchangeCodeForSession(code);
+            }
+
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) {
+                router.push("/login?error=auth");
                 return;
             }
 
-            router.push("/login?error=auth");
+            // 신규 OAuth 유저 프로필 자동 생성
+            const { data: existing } = await supabase
+                .from("profiles")
+                .select("id")
+                .eq("id", session.user.id)
+                .maybeSingle();
+
+            if (!existing) {
+                const meta = session.user.user_metadata;
+                const fullName: string = meta?.full_name ?? meta?.name ?? session.user.email?.split("@")[0] ?? "사용자";
+                const handle = fullName.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "") + "_" + session.user.id.slice(0, 4);
+
+                await supabase.from("profiles").insert({
+                    id: session.user.id,
+                    name: fullName,
+                    handle,
+                    avatar: meta?.avatar_url ?? "🏪",
+                    plan: "free",
+                });
+            }
+
+            router.push("/");
         };
 
         processAuth();

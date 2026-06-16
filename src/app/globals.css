@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
 /* ═══════════════════════════════════════════════
    SELLSTAGRAM · 디자인 토큰 시스템 v2.0
    컨셉: 에너지 넘치는 학습 게임 (Duolingo meets Notion)
@@ -410,6 +415,242 @@ body {
   font-style: italic;
   margin: 1rem 0;
 }
+
+/* ════════════════════════════════════════════════════
+   CAMPAIGN MODE — Pixel Game Theme
+   캠페인 모드 전용: .campaign-mode 래퍼 안에서만 적용
+════════════════════════════════════════════════════ */
+
+.campaign-mode {
+  --cam-bg:          #0A0A18;
+  --cam-surface:     #111128;
+  --cam-surface-2:   #1A1A35;
+  --cam-border:      rgba(76, 201, 240, 0.5);
+  --cam-border-glow: rgba(76, 201, 240, 0.25);
+  --cam-text:        #E0F0FF;
+  --cam-text-muted:  #6A8899;
+  --cam-cyan:        #4CC9F0;
+  --cam-gold:        #FFD60A;
+  --cam-green:       #06D6A0;
+  --cam-red:         #FF4466;
+  --cam-pink:        #FF9BB0;
+  --cam-pixel-font:  var(--font-press-start), 'Press Start 2P', monospace;
+
+  background: var(--cam-bg);
+  color: var(--cam-text);
+  min-height: 100%;
+}
+
+/* 픽셀 패널 (카드 대체) */
+.pixel-panel {
+  background: var(--cam-surface);
+  border: 2px solid var(--cam-border);
+  border-radius: 0;
+  box-shadow: 4px 4px 0 var(--cam-border-glow), 0 0 16px var(--cam-border-glow);
+}
+
+.pixel-panel-dim {
+  background: var(--cam-surface);
+  border: 2px solid rgba(76, 201, 240, 0.15);
+  border-radius: 0;
+  box-shadow: 2px 2px 0 rgba(76, 201, 240, 0.08);
+}
+
+.pixel-panel-selected {
+  border-color: var(--cam-cyan);
+  box-shadow: 4px 4px 0 rgba(76, 201, 240, 0.4), 0 0 24px rgba(76, 201, 240, 0.3);
+}
+
+.pixel-panel-gold {
+  border-color: var(--cam-gold);
+  box-shadow: 4px 4px 0 rgba(255, 214, 10, 0.3), 0 0 16px rgba(255, 214, 10, 0.2);
+}
+
+/* 픽셀 버튼 */
+.pixel-btn {
+  font-family: var(--cam-pixel-font);
+  font-size: 9px;
+  letter-spacing: 0.05em;
+  border: 2px solid var(--cam-border);
+  background: var(--cam-surface-2);
+  color: var(--cam-text);
+  padding: 12px 20px;
+  border-radius: 0;
+  box-shadow: 4px 4px 0 var(--cam-border-glow);
+  cursor: pointer;
+  transition: box-shadow 0.08s, transform 0.08s;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.pixel-btn:hover:not(:disabled) {
+  box-shadow: 2px 2px 0 var(--cam-border-glow);
+  transform: translate(2px, 2px);
+}
+.pixel-btn:active:not(:disabled) {
+  box-shadow: none;
+  transform: translate(4px, 4px);
+}
+.pixel-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.pixel-btn-primary {
+  background: var(--cam-cyan);
+  color: #0A0A18;
+  border-color: #90E4FF;
+  box-shadow: 4px 4px 0 rgba(76, 201, 240, 0.4);
+}
+.pixel-btn-primary:hover:not(:disabled) {
+  box-shadow: 2px 2px 0 rgba(76, 201, 240, 0.4);
+}
+
+.pixel-btn-gold {
+  background: var(--cam-gold);
+  color: #0A0A18;
+  border-color: #FFE55A;
+  box-shadow: 4px 4px 0 rgba(255, 214, 10, 0.4);
+}
+.pixel-btn-gold:hover:not(:disabled) {
+  box-shadow: 2px 2px 0 rgba(255, 214, 10, 0.4);
+}
+
+.pixel-btn-danger {
+  background: var(--cam-red);
+  color: #fff;
+  border-color: #FF8888;
+  box-shadow: 4px 4px 0 rgba(255, 68, 102, 0.4);
+}
+
+/* 픽셀 스코어 바 */
+.pixel-bar-track {
+  height: 16px;
+  background: #0D0D22;
+  border: 2px solid rgba(76, 201, 240, 0.2);
+  border-radius: 0;
+  overflow: hidden;
+  position: relative;
+}
+.pixel-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--cam-cyan), #90E4FF);
+  transition: width 1.4s cubic-bezier(0.22, 1, 0.36, 1);
+  position: relative;
+}
+.pixel-bar-fill::after {
+  content: '';
+  position: absolute;
+  right: 0; top: 0;
+  width: 4px; height: 100%;
+  background: #fff;
+  opacity: 0.6;
+}
+.pixel-bar-fill-gold  { background: linear-gradient(90deg, #E6B800, var(--cam-gold)); }
+.pixel-bar-fill-green { background: linear-gradient(90deg, #047A5C, var(--cam-green)); }
+.pixel-bar-fill-red   { background: linear-gradient(90deg, #AA0022, var(--cam-red)); }
+
+/* 픽셀 텍스트 클래스 */
+.pixel-font { font-family: var(--cam-pixel-font) !important; }
+.pixel-text-xs  { font-family: var(--cam-pixel-font); font-size: 7px;  line-height: 1.8; }
+.pixel-text-sm  { font-family: var(--cam-pixel-font); font-size: 9px;  line-height: 1.8; }
+.pixel-text-md  { font-family: var(--cam-pixel-font); font-size: 11px; line-height: 1.8; }
+.pixel-text-lg  { font-family: var(--cam-pixel-font); font-size: 14px; line-height: 1.6; }
+.pixel-text-xl  { font-family: var(--cam-pixel-font); font-size: 20px; line-height: 1.4; }
+.pixel-text-2xl { font-family: var(--cam-pixel-font); font-size: 28px; line-height: 1.2; }
+
+/* 텍스트 색상 */
+.cam-text-cyan  { color: var(--cam-cyan); }
+.cam-text-gold  { color: var(--cam-gold); }
+.cam-text-green { color: var(--cam-green); }
+.cam-text-red   { color: var(--cam-red); }
+.cam-text-muted { color: var(--cam-text-muted); }
+
+/* 입력 필드 */
+.pixel-input {
+  background: #0D0D22;
+  border: 2px solid var(--cam-border);
+  border-radius: 0;
+  color: var(--cam-text);
+  padding: 10px 14px;
+  font-family: inherit;
+  font-size: 14px;
+  width: 100%;
+  outline: none;
+  box-shadow: inset 2px 2px 0 rgba(0,0,0,0.4);
+}
+.pixel-input:focus {
+  border-color: var(--cam-cyan);
+  box-shadow: inset 2px 2px 0 rgba(0,0,0,0.4), 0 0 8px var(--cam-border-glow);
+}
+.pixel-input::placeholder { color: var(--cam-text-muted); }
+
+/* textarea 전용 */
+.pixel-textarea {
+  resize: none;
+  min-height: 100px;
+}
+
+/* HUD 상단 바 */
+.cam-hud {
+  background: var(--cam-surface);
+  border-bottom: 2px solid var(--cam-border);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+}
+
+/* 섹션 구분선 */
+.cam-divider {
+  border: none;
+  border-top: 2px solid rgba(76, 201, 240, 0.15);
+  margin: 0;
+}
+
+/* ─── Animations ──────────────────────────────── */
+@keyframes pixelFadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes pixelSlideLeft {
+  from { opacity: 0; transform: translateX(-16px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes pixelBlink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+@keyframes pixelGlow {
+  0%, 100% { box-shadow: 4px 4px 0 rgba(76,201,240,0.2), 0 0 12px rgba(76,201,240,0.15); }
+  50%       { box-shadow: 4px 4px 0 rgba(76,201,240,0.5), 0 0 24px rgba(76,201,240,0.35); }
+}
+@keyframes pixelCountUp {
+  from { transform: translateY(6px); opacity: 0; }
+  to   { transform: translateY(0);   opacity: 1; }
+}
+@keyframes pixelReveal {
+  0%   { clip-path: inset(0 100% 0 0); opacity: 0; }
+  100% { clip-path: inset(0 0% 0 0);   opacity: 1; }
+}
+@keyframes pixelFlash {
+  0%, 100% { opacity: 1; }
+  30%, 70%  { opacity: 0.3; }
+}
+@keyframes barFill {
+  from { width: 0%; }
+}
+@keyframes rankAppear {
+  0%   { transform: scale(0.3) rotate(-10deg); opacity: 0; }
+  60%  { transform: scale(1.15) rotate(3deg);  opacity: 1; }
+  100% { transform: scale(1)    rotate(0deg);  opacity: 1; }
+}
+
+.pixel-fade-in     { animation: pixelFadeIn    0.3s ease-out both; }
+.pixel-slide-left  { animation: pixelSlideLeft 0.3s ease-out both; }
+.pixel-blink       { animation: pixelBlink     1s step-end infinite; }
+.pixel-glow        { animation: pixelGlow      2s ease-in-out infinite; }
+.pixel-flash       { animation: pixelFlash     0.5s ease-in-out; }
+.pixel-rank-appear { animation: rankAppear     0.6s cubic-bezier(0.34,1.56,0.64,1) both; }
 .react-markdown strong {
   font-weight: 800;
   color: var(--foreground);
