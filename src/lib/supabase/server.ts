@@ -107,3 +107,20 @@ export async function saveGeneratedContent(params: {
     }
     return data?.id ?? null;
 }
+
+/** 편집 후 콘텐츠 업데이트 */
+export async function updateGeneratedContent(
+    id: string,
+    content: Record<string, unknown>
+): Promise<boolean> {
+    const admin = createAdminClient();
+    const { error } = await admin
+        .from("generated_contents")
+        .update({ content })
+        .eq("id", id);
+    if (error) {
+        console.error("[updateGeneratedContent]", error.message);
+        return false;
+    }
+    return true;
+}

@@ -198,19 +198,17 @@ ${isStory ? `[썰 풀기 스토리 특별 지시]
             .map((s: { slideNum: number; gptPrompt?: string }) => `[${s.slideNum}장] ${s.gptPrompt ?? ""}`)
             .join("\n\n");
 
-        await Promise.all([
-            logUsage(profile.id, "cardnews", "generate"),
-            saveGeneratedContent({
-                userId: profile.id,
-                type: "cardnews",
-                title: data.title ?? productName,
-                productName,
-                content: { ...data, prdDocument, copywritingPrompt },
-                promptText: allPrompts,
-            }),
-        ]);
+        await logUsage(profile.id, "cardnews", "generate");
+        const savedId = await saveGeneratedContent({
+            userId: profile.id,
+            type: "cardnews",
+            title: data.title ?? productName,
+            productName,
+            content: { ...data, prdDocument, copywritingPrompt },
+            promptText: allPrompts,
+        });
 
-        return NextResponse.json({ ...data, prdDocument, copywritingPrompt });
+        return NextResponse.json({ ...data, prdDocument, copywritingPrompt, _savedId: savedId });
 
     } catch (e) {
         console.error("[planner API]", e);

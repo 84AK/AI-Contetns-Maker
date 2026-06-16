@@ -120,6 +120,7 @@ export default function DetailPageBuilderPage() {
     const [copiedContent, setCopiedContent] = useState<string | null>(null);
     const [copiedPrompt, setCopiedPrompt] = useState<string | null>(null);
     const [justSaved, setJustSaved] = useState(false);
+    const [savedId, setSavedId] = useState<string | null>(null);
     const [linkedBanner, setLinkedBanner] = useState(false);
 
     const usage = useUsage();
@@ -130,8 +131,12 @@ export default function DetailPageBuilderPage() {
         const saved = localStorage.getItem("ai_gallery_restore_detailpage");
         if (!saved) return;
         try {
-            const content = JSON.parse(saved) as DetailPageResult;
-            if (content.hookHeadline) setResult(content);
+            const parsed = JSON.parse(saved);
+            if (parsed.hookHeadline) {
+                const { _savedId, ...content } = parsed;
+                setResult(content as DetailPageResult);
+                setSavedId(_savedId ?? null);
+            }
         } catch { /* 무시 */ }
         localStorage.removeItem("ai_gallery_restore_detailpage");
     }, []);
@@ -185,7 +190,9 @@ export default function DetailPageBuilderPage() {
                 if (res.status === 429 && data.limitExceeded) usage.refresh();
                 throw new Error(data.error || "오류 발생");
             }
-            setResult(data);
+            const { _savedId, ...content } = data;
+            setResult(content as DetailPageResult);
+            setSavedId(_savedId ?? null);
             setJustSaved(true);
             setTimeout(() => setJustSaved(false), 3000);
             usage.refresh();
@@ -386,7 +393,19 @@ export default function DetailPageBuilderPage() {
 
                 <RefinementPanel contentType="detail-page" originalInput={form}
                     currentResult={result as unknown as Record<string, unknown>}
-                    onUpdate={(r) => { setResult(r as unknown as DetailPageResult); setSelectedSection(0); }} />
+                    onUpdate={async (r) => {
+                        const updated = r as unknown as DetailPageResult;
+                        setResult(updated);
+                        setSelectedSection(0);
+                        if (savedId) {
+                            const token = await usage.getToken();
+                            await fetch("/api/ai/save", {
+                                method: "PUT",
+                                headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+                                body: JSON.stringify({ id: savedId, content: updated }),
+                            });
+                        }
+                    }} />
             </div>
             </AuthGate>
         );

@@ -86,6 +86,7 @@ export default function ShortsPage() {
     const [copiedScene, setCopiedScene] = useState<number | null>(null);
     const [copiedAll, setCopiedAll] = useState(false);
     const [justSaved, setJustSaved] = useState(false);
+    const [savedId, setSavedId] = useState<string | null>(null);
 
     const usage = useUsage();
     const { linked, clearLinked } = useLinkedContent();
@@ -95,8 +96,12 @@ export default function ShortsPage() {
         const saved = localStorage.getItem("ai_gallery_restore_shorts");
         if (!saved) return;
         try {
-            const content = JSON.parse(saved) as ShortsResult;
-            if (content.scenes?.length) setResult(content);
+            const parsed = JSON.parse(saved);
+            if (parsed.scenes?.length) {
+                const { _savedId, ...content } = parsed;
+                setResult(content as ShortsResult);
+                setSavedId(_savedId ?? null);
+            }
         } catch { /* 무시 */ }
         localStorage.removeItem("ai_gallery_restore_shorts");
     }, []);
@@ -146,7 +151,9 @@ export default function ShortsPage() {
                 throw new Error(data.error || "오류 발생");
             }
 
-            setResult(data);
+            const { _savedId, ...content } = data;
+            setResult(content as ShortsResult);
+            setSavedId(_savedId ?? null);
             setJustSaved(true);
             setTimeout(() => setJustSaved(false), 3000);
             usage.refresh();
@@ -348,7 +355,19 @@ export default function ShortsPage() {
                 {/* AI 수정 요청 */}
                 <RefinementPanel contentType="shorts" originalInput={form}
                     currentResult={result as unknown as Record<string, unknown>}
-                    onUpdate={(r) => { setResult(r as unknown as ShortsResult); setSelectedScene(0); }} />
+                    onUpdate={async (r) => {
+                        const updated = r as unknown as ShortsResult;
+                        setResult(updated);
+                        setSelectedScene(0);
+                        if (savedId) {
+                            const token = await usage.getToken();
+                            await fetch("/api/ai/save", {
+                                method: "PUT",
+                                headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+                                body: JSON.stringify({ id: savedId, content: updated }),
+                            });
+                        }
+                    }} />
             </div>
             </AuthGate>
         );

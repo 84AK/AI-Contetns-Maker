@@ -116,19 +116,17 @@ ${generateSlideGuide(contentType, count)}
             .map((s: { slideNum: number; gptPrompt?: string }) => `[${s.slideNum}장] ${s.gptPrompt ?? ""}`)
             .join("\n\n");
 
-        await Promise.all([
-            logUsage(profile.id, "cardnews", "generate"),
-            saveGeneratedContent({
-                userId: profile.id,
-                type: "cardnews",
-                title: data.title ?? productName,
-                productName,
-                content: data,
-                promptText: allPrompts,
-            }),
-        ]);
+        await logUsage(profile.id, "cardnews", "generate");
+        const savedId = await saveGeneratedContent({
+            userId: profile.id,
+            type: "cardnews",
+            title: data.title ?? productName,
+            productName,
+            content: data,
+            promptText: allPrompts,
+        });
 
-        return NextResponse.json(data);
+        return NextResponse.json({ ...data, _savedId: savedId });
 
     } catch (e) {
         console.error("[cardnews API]", e);

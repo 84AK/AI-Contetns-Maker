@@ -236,6 +236,8 @@ export default function PlannerPage() {
     const [activeTab, setActiveTab] = useState<"storyboard" | "prd" | "prompts">("storyboard");
     // 마지막 생성 시점의 폼 스냅샷 (변경 여부 감지용)
     const [formSnapshot, setFormSnapshot] = useState<string | null>(null);
+    const [savedId, setSavedId] = useState<string | null>(null);
+    const [autoSaving, setAutoSaving] = useState(false);
 
     // ── 폼 상태 ──
     const DEFAULT_FORM = {
@@ -280,21 +282,38 @@ export default function PlannerPage() {
         const saved = localStorage.getItem("ai_gallery_restore_planner");
         if (!saved) return;
         try {
-            const content = JSON.parse(saved) as PlannerResult;
-            if (content.slides?.length) {
-                setResult(content);
+            const parsed = JSON.parse(saved);
+            if (parsed.slides?.length) {
+                const { _savedId, ...content } = parsed;
+                setResult(content as PlannerResult);
+                setSavedId(_savedId ?? null);
                 setStep(4);
             }
         } catch { /* 무시 */ }
         localStorage.removeItem("ai_gallery_restore_planner");
     }, []);
 
-    const updateSlide = (idx: number, updates: Partial<Slide>) => {
+    const updateSlide = async (idx: number, updates: Partial<Slide>) => {
         setResult(prev => {
             if (!prev) return prev;
             const slides = [...prev.slides];
             slides[idx] = { ...slides[idx], ...updates };
-            return { ...prev, slides };
+            const next = { ...prev, slides };
+            // savedId가 있으면 DB에 자동 저장
+            if (savedId) {
+                const token = usage.getToken();
+                token.then(t => {
+                    setAutoSaving(true);
+                    fetch("/api/ai/save", {
+                        method: "PUT",
+                        headers: { "Content-Type": "application/json", ...(t ? { Authorization: `Bearer ${t}` } : {}) },
+                        body: JSON.stringify({ id: savedId, content: next }),
+                    }).finally(() => {
+                        setAutoSaving(false);
+                    });
+                });
+            }
+            return next;
         });
     };
 
@@ -332,7 +351,9 @@ export default function PlannerPage() {
                 if (res.status === 429 && data.limitExceeded) usage.refresh();
                 throw new Error(data.error || "오류 발생");
             }
-            setResult(data);
+            const { _savedId, ...content } = data;
+            setResult(content as PlannerResult);
+            setSavedId(_savedId ?? null);
             setSelectedSlide(0);
             setFormSnapshot(JSON.stringify(form));
             usage.refresh();
@@ -1102,12 +1123,26 @@ export default function PlannerPage() {
                                     <p className="text-sm mt-1" style={{ color: "var(--foreground-soft)" }}>🎨 {result.styleGuide}</p>
                                 )}
                             </div>
-                            <button onClick={() => setStep(3)}
-                                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-bold shrink-0 transition-all"
-                                style={{ background: "var(--surface-2)", color: "var(--foreground-soft)" }}>
-                                <RotateCcw size={13} />
-                                재생성
-                            </button>
+                            <div className="flex items-center gap-2 shrink-0">
+                                {autoSaving && (
+                                    <span className="text-xs px-2.5 py-1 rounded-full font-bold animate-pulse"
+                                        style={{ background: "var(--accent-light)", color: "var(--accent)" }}>
+                                        저장 중...
+                                    </span>
+                                )}
+                                {!autoSaving && savedId && (
+                                    <span className="text-xs px-2.5 py-1 rounded-full font-bold"
+                                        style={{ background: "var(--surface-2)", color: "var(--foreground-muted)" }}>
+                                        ✓ 자동 저장
+                                    </span>
+                                )}
+                                <button onClick={() => setStep(3)}
+                                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-bold transition-all"
+                                    style={{ background: "var(--surface-2)", color: "var(--foreground-soft)" }}>
+                                    <RotateCcw size={13} />
+                                    재생성
+                                </button>
+                            </div>
                         </div>
 
                         {/* 이미지 모델 선택 */}

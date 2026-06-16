@@ -186,17 +186,18 @@ export default function GalleryPage() {
     };
 
     const openInEditor = (item: GeneratedContent) => {
+        const payload = { ...item.content, _savedId: item.id };
         if (isPlannerContent(item)) {
-            localStorage.setItem("ai_gallery_restore_planner", JSON.stringify(item.content));
+            localStorage.setItem("ai_gallery_restore_planner", JSON.stringify(payload));
             router.push("/planner");
         } else if (item.type === "cardnews") {
-            localStorage.setItem("ai_gallery_restore_cardnews", JSON.stringify(item.content));
+            localStorage.setItem("ai_gallery_restore_cardnews", JSON.stringify(payload));
             router.push("/cardnews");
         } else if (item.type === "shorts") {
-            localStorage.setItem("ai_gallery_restore_shorts", JSON.stringify(item.content));
+            localStorage.setItem("ai_gallery_restore_shorts", JSON.stringify(payload));
             router.push("/shorts");
         } else if (item.type === "detail-page") {
-            localStorage.setItem("ai_gallery_restore_detailpage", JSON.stringify(item.content));
+            localStorage.setItem("ai_gallery_restore_detailpage", JSON.stringify(payload));
             router.push("/detail-page");
         }
     };

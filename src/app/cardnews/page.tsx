@@ -138,8 +138,12 @@ export default function CardNewsPage() {
         const saved = localStorage.getItem("ai_gallery_restore_cardnews");
         if (!saved) return;
         try {
-            const content = JSON.parse(saved) as CardNewsResult;
-            if (content.slides?.length) setResult(content);
+            const parsed = JSON.parse(saved);
+            if (parsed.slides?.length) {
+                const { _savedId, ...content } = parsed;
+                setResult(content as CardNewsResult);
+                setSavedId(_savedId ?? null);
+            }
         } catch { /* 무시 */ }
         localStorage.removeItem("ai_gallery_restore_cardnews");
     }, []);
@@ -181,9 +185,9 @@ export default function CardNewsPage() {
                 throw new Error(data.error || "오류 발생");
             }
 
-            setResult(data);
-
-            setSavedId(crypto.randomUUID());
+            const { _savedId, ...content } = data;
+            setResult(content as CardNewsResult);
+            setSavedId(_savedId ?? null);
             setJustSaved(true);
             setTimeout(() => setJustSaved(false), 3000);
             usage.refresh(); // 사용 횟수 갱신
