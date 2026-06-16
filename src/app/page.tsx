@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Layers, FileText, Film, ArrowRight, Sparkles, Zap, Target, ClipboardList, ChevronRight } from "lucide-react";
+import { Layers, FileText, Film, Megaphone, ArrowRight, Sparkles, Zap, Target, ClipboardList, ChevronRight } from "lucide-react";
 
 const tools = [
     {
@@ -28,6 +28,15 @@ const tools = [
         tag: "유튜브 쇼츠 · 릴스 · 틱톡",
         color: "var(--accent)",
         colorLight: "#ECFDF5",
+    },
+    {
+        href: "/adcopy",
+        icon: Megaphone,
+        title: "광고 카피 생성기",
+        description: "헤드라인 5종 · 본문 3종 · CTA · 해시태그를 한 번에 생성해 광고 소재로 바로 활용하세요.",
+        tag: "인스타 · 스마트스토어 · 카카오",
+        color: "#EF4444",
+        colorLight: "#FEF2F2",
     },
 ];
 

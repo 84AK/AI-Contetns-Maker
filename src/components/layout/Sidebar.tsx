@@ -18,6 +18,7 @@ import {
     User,
     ClipboardList,
     Shield,
+    Megaphone,
 } from "lucide-react";
 import ThemeToggle from "@/components/common/ThemeToggle";
 import { useAppStore } from "@/store/useAppStore";
@@ -31,6 +32,7 @@ const navItems = [
     { name: "카드뉴스",      href: "/cardnews",   icon: Layers,        highlight: false },
     { name: "상세페이지",    href: "/detail-page", icon: FileText,      highlight: false },
     { name: "쇼츠 스크립트", href: "/shorts",     icon: Film,          highlight: false },
+    { name: "광고 카피",     href: "/adcopy",     icon: Megaphone,     highlight: false },
     { name: "내 갤러리",     href: "/gallery",    icon: Images,        highlight: false },
 ];
 
