@@ -8,6 +8,7 @@ import AuthGate from "@/components/common/AuthGate";
 import UsageBar from "@/components/common/UsageBar";
 import { useUsage } from "@/lib/hooks/useUsage";
 import { useLinkedContent } from "@/store/useLinkedContent";
+import VersionSwitcher from "@/components/common/VersionSwitcher";
 
 interface FeatureItem { icon: string; title: string; desc: string; }
 interface ReviewItem { rating: number; text: string; }
@@ -131,6 +132,7 @@ export default function DetailPageBuilderPage() {
     const [copiedProductSheet, setCopiedProductSheet] = useState(false);
     const [justSaved, setJustSaved] = useState(false);
     const [savedId, setSavedId] = useState<string | null>(null);
+    const [versionTrigger, setVersionTrigger] = useState(0);
     const [linkedBanner, setLinkedBanner] = useState(false);
 
     const usage = useUsage();
@@ -206,6 +208,7 @@ export default function DetailPageBuilderPage() {
             setSavedId(_savedId ?? null);
             setJustSaved(true);
             setTimeout(() => setJustSaved(false), 3000);
+            setVersionTrigger(t => t + 1);
             usage.refresh();
         } catch (e) {
             setError(e instanceof Error ? e.message : "오류가 발생했어요.");
@@ -254,6 +257,16 @@ export default function DetailPageBuilderPage() {
                         {justSaved ? <BookmarkCheck size={13} /> : <Bookmark size={13} />}
                         {justSaved ? "갤러리에 저장됨" : "저장됨"}
                     </span>
+                    <VersionSwitcher
+                        type="detail-page"
+                        currentId={savedId}
+                        getToken={usage.getToken}
+                        refreshTrigger={versionTrigger}
+                        onSelect={(id, content) => {
+                            setResult(content as unknown as DetailPageResult);
+                            setSavedId(id);
+                        }}
+                    />
                     <button onClick={() => { setResult(null); setShowFormPanel(false); }}
                         className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold"
                         style={{ background: "var(--surface-2)", color: "var(--foreground-soft)" }}>

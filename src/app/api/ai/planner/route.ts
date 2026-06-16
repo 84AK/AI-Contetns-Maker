@@ -160,10 +160,10 @@ ${coreContent ? `상세 내용:\n${coreContent}` : ""}
             .map((s: { slideNum: number; gptPrompt?: string }) => `[${s.slideNum}장] ${s.gptPrompt ?? ""}`)
             .join("\n\n");
 
-        await logUsage(profile.id, "cardnews", "generate");
+        await logUsage(profile.id, "planner", "generate");
         const savedId = await saveGeneratedContent({
             userId: profile.id,
-            type: "cardnews",
+            type: "planner",
             title: data.title ?? productName,
             productName,
             content: { ...data, template, prdDocument, copywritingPrompt },

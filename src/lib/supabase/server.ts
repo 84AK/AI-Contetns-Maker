@@ -81,7 +81,7 @@ export async function logUsage(
 /** 결과물 DB 저장 */
 export async function saveGeneratedContent(params: {
     userId: string;
-    type: "cardnews" | "detail-page" | "shorts";
+    type: "cardnews" | "detail-page" | "shorts" | "adcopy" | "planner";
     title: string;
     productName: string;
     content: Record<string, unknown>;

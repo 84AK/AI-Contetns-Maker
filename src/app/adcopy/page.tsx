@@ -6,6 +6,7 @@ import AuthGate from "@/components/common/AuthGate";
 import UsageBar from "@/components/common/UsageBar";
 import { useUsage } from "@/lib/hooks/useUsage";
 import { usePersistedForm } from "@/lib/hooks/usePersistedForm";
+import VersionSwitcher from "@/components/common/VersionSwitcher";
 
 interface Headline { type: string; text: string; hook: string; }
 interface BodyText { length: string; label: string; text: string; }
@@ -72,6 +73,8 @@ export default function AdCopyPage() {
     const [copiedAdCard, setCopiedAdCard] = useState(false);
     const [expandedImgPrompt, setExpandedImgPrompt] = useState<string | null>(null);
     const [justSaved, setJustSaved] = useState(false);
+    const [savedId, setSavedId] = useState<string | null>(null);
+    const [versionTrigger, setVersionTrigger] = useState(0);
 
     const usage = useUsage();
 
@@ -109,9 +112,12 @@ export default function AdCopyPage() {
                 if (res.status === 429 && data.limitExceeded) usage.refresh();
                 throw new Error(data.error || "오류 발생");
             }
-            setResult(data as AdCopyResult);
+            const { _savedId, ...content } = data;
+            setResult(content as AdCopyResult);
+            setSavedId(_savedId ?? null);
             setJustSaved(true);
             setTimeout(() => setJustSaved(false), 3000);
+            setVersionTrigger(t => t + 1);
             usage.refresh();
         } catch (e) {
             setError(e instanceof Error ? e.message : "오류가 발생했어요.");
@@ -288,6 +294,16 @@ export default function AdCopyPage() {
                                         style={{ background: "var(--accent-light)", color: "var(--accent)" }}>
                                         {justSaved ? <><Check size={11} />갤러리 저장됨</> : <><Sparkles size={11} />생성 완료</>}
                                     </div>
+                                    <VersionSwitcher
+                                        type="adcopy"
+                                        currentId={savedId}
+                                        getToken={usage.getToken}
+                                        refreshTrigger={versionTrigger}
+                                        onSelect={(id, content) => {
+                                            setResult(content as unknown as AdCopyResult);
+                                            setSavedId(id);
+                                        }}
+                                    />
                                 </div>
                                 <button onClick={() => setShowFormPanel(!showFormPanel)}
                                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold"

@@ -8,6 +8,7 @@ import AuthGate from "@/components/common/AuthGate";
 import UsageBar from "@/components/common/UsageBar";
 import { useUsage } from "@/lib/hooks/useUsage";
 import { useLinkedContent } from "@/store/useLinkedContent";
+import VersionSwitcher from "@/components/common/VersionSwitcher";
 
 interface Scene {
     sceneNum: number;
@@ -111,6 +112,7 @@ export default function ShortsPage() {
     const [copiedSceneImage, setCopiedSceneImage] = useState<number | null>(null);
     const [justSaved, setJustSaved] = useState(false);
     const [savedId, setSavedId] = useState<string | null>(null);
+    const [versionTrigger, setVersionTrigger] = useState(0);
 
     const usage = useUsage();
     const { linked, clearLinked } = useLinkedContent();
@@ -181,6 +183,7 @@ export default function ShortsPage() {
             setSavedId(_savedId ?? null);
             setJustSaved(true);
             setTimeout(() => setJustSaved(false), 3000);
+            setVersionTrigger(t => t + 1);
             usage.refresh();
         } catch (e) {
             setError(e instanceof Error ? e.message : "오류가 발생했어요.");
@@ -254,6 +257,16 @@ export default function ShortsPage() {
                         {justSaved ? <BookmarkCheck size={13} /> : <Bookmark size={13} />}
                         {justSaved ? "갤러리에 저장됨" : "저장됨"}
                     </span>
+                    <VersionSwitcher
+                        type="shorts"
+                        currentId={savedId}
+                        getToken={usage.getToken}
+                        refreshTrigger={versionTrigger}
+                        onSelect={(id, content) => {
+                            setResult(content as unknown as ShortsResult);
+                            setSavedId(id);
+                        }}
+                    />
                     <button onClick={() => { setResult(null); setShowFormPanel(false); }}
                         className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold"
                         style={{ background: "var(--surface-2)", color: "var(--foreground-soft)" }}>

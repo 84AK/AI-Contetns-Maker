@@ -9,6 +9,7 @@ import AuthGate from "@/components/common/AuthGate";
 import UsageBar from "@/components/common/UsageBar";
 import { useUsage } from "@/lib/hooks/useUsage";
 import { useLinkedContent } from "@/store/useLinkedContent";
+import VersionSwitcher from "@/components/common/VersionSwitcher";
 
 interface Slide {
     slideNum: number;
@@ -152,6 +153,7 @@ export default function CardNewsPage() {
     const [copiedAll, setCopiedAll] = useState(false);
     const [copiedCharSheet, setCopiedCharSheet] = useState(false);
     const [justSaved, setJustSaved] = useState(false);
+    const [versionTrigger, setVersionTrigger] = useState(0);
 
     const usage = useUsage();
 
@@ -213,7 +215,8 @@ export default function CardNewsPage() {
             setSavedId(_savedId ?? null);
             setJustSaved(true);
             setTimeout(() => setJustSaved(false), 3000);
-            usage.refresh(); // 사용 횟수 갱신
+            setVersionTrigger(t => t + 1);
+            usage.refresh();
         } catch (e) {
             setError(e instanceof Error ? e.message : "오류가 발생했어요.");
         } finally {
@@ -291,13 +294,25 @@ export default function CardNewsPage() {
                         )}
                     </div>
 
-                    <div className="flex items-center gap-2 shrink-0">
-                        {/* 저장 상태 표시 */}
+                    <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+                        {/* 저장 상태 */}
                         <span className="flex items-center gap-1 text-[11px] font-bold"
                             style={{ color: justSaved ? "var(--accent)" : "var(--foreground-muted)" }}>
                             {justSaved ? <BookmarkCheck size={13} /> : <Bookmark size={13} />}
                             {justSaved ? "갤러리에 저장됨" : "저장됨"}
                         </span>
+
+                        {/* 버전 전환 */}
+                        <VersionSwitcher
+                            type="cardnews"
+                            currentId={savedId}
+                            getToken={usage.getToken}
+                            refreshTrigger={versionTrigger}
+                            onSelect={(id, content) => {
+                                setResult(content as unknown as CardNewsResult);
+                                setSavedId(id);
+                            }}
+                        />
 
                         <button onClick={() => { setResult(null); setShowFormPanel(false); }}
                             className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all"

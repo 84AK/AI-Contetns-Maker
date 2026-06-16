@@ -13,6 +13,8 @@ import {
 import AuthGate from "@/components/common/AuthGate";
 import UsageBar from "@/components/common/UsageBar";
 import { useUsage } from "@/lib/hooks/useUsage";
+import { usePersistedForm } from "@/lib/hooks/usePersistedForm";
+import VersionSwitcher from "@/components/common/VersionSwitcher";
 
 // ─── 타입 ──────────────────────────────────────────────────────────────
 interface Slide {
@@ -279,25 +281,11 @@ export default function PlannerPage() {
         slideCount: "6",
         contentGoal: "purchase",
     };
-    const [form, setForm] = useState(DEFAULT_FORM);
+    const [form, setForm] = usePersistedForm("planner_form_draft_v2", DEFAULT_FORM);
+    const [versionTrigger, setVersionTrigger] = useState(0);
 
     const setField = (key: string, value: string) =>
         setForm(f => ({ ...f, [key]: value }));
-
-    // 폼 변경 시마다 sessionStorage에 저장
-    useEffect(() => {
-        sessionStorage.setItem("planner_form_draft", JSON.stringify(form));
-    }, [form]);
-
-    // 마운트 시 sessionStorage에서 폼 복원 (페이지 이동 후 돌아와도 유지)
-    useEffect(() => {
-        const saved = sessionStorage.getItem("planner_form_draft");
-        if (!saved) return;
-        try {
-            const f = JSON.parse(saved);
-            setForm(prev => ({ ...prev, ...f }));
-        } catch { /* 무시 */ }
-    }, []);
 
     // 갤러리에서 복원
     useEffect(() => {
@@ -378,6 +366,7 @@ export default function PlannerPage() {
             setSavedId(_savedId ?? null);
             setSelectedSlide(0);
             setFormSnapshot(JSON.stringify(form));
+            setVersionTrigger(t => t + 1);
             usage.refresh();
             setStep(4);
         } catch (e) {
@@ -1145,7 +1134,7 @@ export default function PlannerPage() {
                                     <p className="text-sm mt-1" style={{ color: "var(--foreground-soft)" }}>🎨 {result.styleGuide}</p>
                                 )}
                             </div>
-                            <div className="flex items-center gap-2 shrink-0">
+                            <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
                                 {autoSaving && (
                                     <span className="text-xs px-2.5 py-1 rounded-full font-bold animate-pulse"
                                         style={{ background: "var(--accent-light)", color: "var(--accent)" }}>
@@ -1158,6 +1147,16 @@ export default function PlannerPage() {
                                         ✓ 자동 저장
                                     </span>
                                 )}
+                                <VersionSwitcher
+                                    type="planner"
+                                    currentId={savedId}
+                                    getToken={usage.getToken}
+                                    refreshTrigger={versionTrigger}
+                                    onSelect={(id, content) => {
+                                        setResult(content as unknown as PlannerResult);
+                                        setSavedId(id);
+                                    }}
+                                />
                                 <button onClick={() => setStep(3)}
                                     className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-bold transition-all"
                                     style={{ background: "var(--surface-2)", color: "var(--foreground-soft)" }}>
@@ -1644,7 +1643,6 @@ export default function PlannerPage() {
                                 onClick={() => {
                                     setResult(null);
                                     setFormSnapshot(null);
-                                    sessionStorage.removeItem("planner_form_draft");
                                     setStep(1);
                                     setForm(DEFAULT_FORM);
                                 }}
